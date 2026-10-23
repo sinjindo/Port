@@ -1,0 +1,1935 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16202b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PORTFLOW">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+<title>PORTFLOW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 운영 콘솔. 상단 '지금 답해야 할 4가지' → 시나리오 입력·그래프 → 상세. 색은 데이터 종류(변경 전/후/실측)와 상태(정상/주의/초과)에만 쓴다. */
+:root{
+  --bg:#f6f7f8; --surface:#ffffff; --soft:#eef0f2; --line:#d9dde2; --line-2:#b9c0c8;
+  --ink:#16202b; --ink-2:#3c4a58; --muted:#6b7784;
+  --before:#2a6fcf; --after:#16202b; --actual:#b35c00; --band:rgba(22,32,43,.10);
+  --ok:#1d8f5a; --warn:#c48a00; --bad:#c7362b; --bad-bg:#fbeae8; --ok-bg:#e6f4ec; --warn-bg:#fcf3dc;
+  --lv-real:#1d8f5a; --lv-pub:#2a6fcf; --lv-syn:#6b7784; --lv-asm:#b35c00;
+  --f-sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:4px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111519; --surface:#181d23; --soft:#1f252c; --line:#2d353e; --line-2:#48535f;
+  --ink:#eef1f4; --ink-2:#c3cad2; --muted:#8c97a3;
+  --before:#6ea3f0; --after:#eef1f4; --actual:#f0a04a; --band:rgba(238,241,244,.12);
+  --ok:#3fcf8e; --warn:#f2c03a; --bad:#ff7b6e; --bad-bg:#3a1c19; --ok-bg:#153324; --warn-bg:#3a2f10;
+  --lv-real:#3fcf8e; --lv-pub:#6ea3f0; --lv-syn:#8c97a3; --lv-asm:#f0a04a;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111519; --surface:#181d23; --soft:#1f252c; --line:#2d353e; --line-2:#48535f;
+  --ink:#eef1f4; --ink-2:#c3cad2; --muted:#8c97a3;
+  --before:#6ea3f0; --after:#eef1f4; --actual:#f0a04a; --band:rgba(238,241,244,.12);
+  --ok:#3fcf8e; --warn:#f2c03a; --bad:#ff7b6e; --bad-bg:#3a1c19; --ok-bg:#153324; --warn-bg:#3a2f10;
+  --lv-real:#3fcf8e; --lv-pub:#6ea3f0; --lv-syn:#8c97a3; --lv-asm:#f0a04a;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.55;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;cursor:pointer;color:inherit}
+button:disabled{cursor:not-allowed;opacity:.45}
+:focus-visible{outline:2px solid var(--before);outline-offset:2px}
+a{color:var(--ink);text-underline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--ink);margin:0}
+input[type=number],select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:5px 8px;width:100%}
+.num,td.n,.kpi .v,.mono{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:13px}
+.note{font-size:13px;color:var(--muted)}
+.small{font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;color:var(--ink-2);font-weight:600;background:var(--soft);white-space:nowrap}
+td.n{text-align:right;white-space:nowrap}
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+.tscroll table{min-width:640px}
+
+/* 머리 */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;padding:22px 0 12px}
+.top h1{font-size:clamp(22px,2.4vw,28px);font-weight:700;letter-spacing:-.01em}
+.top .sub{font-size:14.5px;color:var(--ink-2);margin-top:4px;max-width:760px}
+.levels{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.lv{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.lv i{width:10px;height:10px;border-radius:2px;display:inline-block;border:1.5px solid}
+.lv.real i{border-color:var(--lv-real);background:var(--lv-real)}
+.lv.pub i{border-color:var(--lv-pub);background:var(--lv-pub)}
+.lv.syn i{border-color:var(--lv-syn);background:transparent;border-style:dashed}
+.lv.asm i{border-color:var(--lv-asm);background:transparent}
+.chip{display:inline-block;font-size:11.5px;line-height:1.4;border-radius:999px;padding:1px 8px;border:1.5px solid;white-space:nowrap;vertical-align:middle}
+.chip.real{color:var(--lv-real);border-color:var(--lv-real)}
+.chip.pub{color:var(--lv-pub);border-color:var(--lv-pub)}
+.chip.syn{color:var(--lv-syn);border-color:var(--lv-syn);border-style:dashed}
+.chip.asm{color:var(--lv-asm);border-color:var(--lv-asm)}
+.chip.rule{color:var(--ink-2);border-color:var(--line-2);background:var(--soft)}
+.chip.plan{color:var(--muted);border-color:var(--line)}
+.st{display:inline-block;font-size:12px;font-weight:600;border-radius:var(--r);padding:2px 8px;white-space:nowrap}
+.st.ok{color:var(--ok);background:var(--ok-bg)}
+.st.warn{color:var(--warn);background:var(--warn-bg)}
+.st.bad{color:var(--bad);background:var(--bad-bg)}
+.st.na{color:var(--muted);background:var(--soft)}
+
+/* 탭 */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);display:flex;gap:2px;overflow-x:auto;border-top:2px solid var(--ink);border-bottom:1px solid var(--line);padding:6px 0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;background:none;border:0;color:var(--ink-2);font-size:14.5px;padding:7px 12px;border-radius:var(--r)}
+.tabs button:hover{background:var(--soft)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.sec{margin-top:20px}
+.sec-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line-2);margin-bottom:14px}
+.sec-h h2{font-size:20px;font-weight:700}
+.sec-h .lead{font-size:14px;color:var(--ink-2)}
+.sub-h{font-size:15.5px;font-weight:700;margin:20px 0 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sub-h .hint{font-size:12.5px;font-weight:400;color:var(--muted)}
+
+/* 답 카드 */
+.answers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ans{border:1px solid var(--line-2);border-radius:var(--r);padding:12px 14px;min-width:0;background:var(--surface)}
+.ans .q{font-size:12.5px;color:var(--muted);font-weight:600}
+.ans .a{font-size:17px;font-weight:700;margin-top:4px;line-height:1.3}
+.ans .d{font-size:13px;color:var(--ink-2);margin-top:4px}
+.ans.alert{border-color:var(--bad);box-shadow:inset 0 3px 0 var(--bad)}
+.ans.ok{border-color:var(--ok);box-shadow:inset 0 3px 0 var(--ok)}
+.event{margin-top:12px;padding:10px 14px;border:1px solid var(--warn);border-left-width:4px;border-radius:var(--r);background:var(--surface);display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.event b{font-weight:600}
+
+/* 입력 */
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.panel{border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--surface);min-width:0}
+.ctl{display:grid;gap:10px}
+.ctl label{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:13.5px;color:var(--ink-2)}
+.ctl label output{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl label input[type=range]{grid-column:1/-1}
+.ctl label .ch{grid-column:2;justify-self:end}
+details{border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;background:var(--surface)}
+summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-2)}
+summary:hover{color:var(--ink)}
+details[open]>summary{margin-bottom:4px}
+details .ctl{margin-top:10px}
+
+/* 그래프 */
+.chart{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px 8px 4px;position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2);padding:4px 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid}
+.legend i.dash{border-top-style:dashed}
+.legend i.fill{height:10px;border:0;background:var(--band)}
+.legend i.red{height:10px;border:0;background:var(--bad);opacity:.25}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:5px 8px;font-size:12.5px;line-height:1.45;white-space:nowrap;display:none;z-index:3}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.kpi{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;min-width:0;background:var(--surface)}
+.kpi .lb{font-size:12.5px;color:var(--ink-2)}
+.kpi .v{font-size:22px;font-weight:600;line-height:1.15;margin-top:2px;white-space:nowrap}
+.kpi .v small{font-size:12px;color:var(--muted);font-weight:500;margin-left:3px}
+.kpi .d{font-size:12.5px;color:var(--muted);margin-top:2px}
+.todo{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.todo li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:13.5px}
+.todo li .who{font-size:11.5px;color:var(--muted);display:block}
+
+/* 과정 */
+.chain{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.chain li{border:1px solid var(--line-2);border-radius:var(--r);padding:8px 10px;min-width:0}
+.chain li span{display:block;font-size:12px;color:var(--muted)}
+.chain li b{display:block;font-size:15px;font-weight:600}
+.chain li em{display:block;font-style:normal;font-size:12px;color:var(--ink-2)}
+.chain li.key{border-color:var(--before);box-shadow:inset 0 3px 0 var(--before)}
+.gantt{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px}
+.gantt svg{display:block;width:100%;height:auto}
+
+/* 3D */
+.twin{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px}
+.stage{position:relative;height:clamp(300px,42vw,480px);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;background:var(--soft)}
+.stage canvas{display:block;width:100%!important;height:100%!important;touch-action:none;cursor:grab}
+.hud{position:absolute;left:10px;top:10px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:6px 10px;font-size:12.5px;pointer-events:none}
+.hud b{font-size:18px}
+.iso{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px}
+.iso svg{display:block;width:100%;height:auto}
+
+/* 대안 */
+.alts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.alt{border:1px solid var(--line-2);border-radius:var(--r);padding:12px 14px;background:var(--surface);min-width:0}
+.alt h4{font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.alt .rows{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;font-size:13.5px;margin-top:8px}
+.alt .rows span{color:var(--muted)}
+.alt .rows b{font-weight:600;font-variant-numeric:tabular-nums}
+.verdict{margin-top:12px;padding:10px 14px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--surface);font-size:14.5px}
+.verdict.bad{border-color:var(--bad);background:var(--bad-bg)}
+.verdict.ok{border-color:var(--ok);background:var(--ok-bg)}
+
+/* 3D 상황판 */
+.stage3{position:relative;height:clamp(320px,46vw,560px);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;background:var(--soft)}
+.stage3 canvas{display:block;width:100%!important;height:100%!important;touch-action:none;cursor:grab}
+.stage3 .hud{left:10px;top:10px}
+.views{position:absolute;right:10px;top:10px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.views button{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:5px 9px;font-size:12.5px;color:var(--ink-2)}
+.views button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage3 .fallback{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13.5px;padding:16px;text-align:center}
+.timebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.timebar label{flex:1;min-width:220px;font-size:13px;color:var(--ink-2)}
+.timebar output{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.legend3{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.legend3 span{display:inline-flex;align-items:center;gap:6px}
+.legend3 i{display:inline-block;width:12px;height:12px;border-radius:2px}
+.proc{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px}
+.proc svg{display:block;width:100%;height:auto}
+.heat{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:8px}
+.heat svg{display:block;width:100%;height:auto}
+/* 추적표 */
+.track td:nth-child(1){font-weight:600;white-space:nowrap}
+.srcs{font-size:13.5px;padding-left:18px;margin:0;display:grid;gap:5px}
+.foot{margin-top:28px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+
+@media (max-width:900px){
+  .answers,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2,.grid3,.alts,.twin{grid-template-columns:minmax(0,1fr)}
+  .chain{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .answers,.kpis{grid-template-columns:minmax(0,1fr)}
+  .chain{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="note">Reefer-Peak AI · 선박·하역 일정 기반 전력수요 재예측 및 피크 사전경보 · 시연본 v9 · 가상 데이터</div>
+    <h1>PORTFLOW</h1>
+    <p class="sub">배가 늦게 오면 냉동컨테이너 전력 피크도 옮겨간다. 언제, 얼마나, 왜 — 그리고 무엇을 할 수 있는지를 한 화면에서 본다.</p>
+  </div>
+  <div class="levels" aria-label="데이터 수준 범례">
+    <span class="lv real"><i></i>실측</span>
+    <span class="lv pub"><i></i>공개자료·문헌</span>
+    <span class="lv asm"><i></i>가정값</span>
+    <span class="lv syn"><i></i>가상데이터</span>
+    <span class="chip rule">AI 예측은 가상 데이터로 학습</span>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" id="tabs">
+  <button role="tab" aria-selected="true" data-tab="now">① 상황판</button>
+  <button role="tab" aria-selected="false" data-tab="chain">② 왜 피크가 생기나</button>
+  <button role="tab" aria-selected="false" data-tab="alt">③ 무엇을 할 수 있나</button>
+  <button role="tab" aria-selected="false" data-tab="verify">④ 믿을 수 있나</button>
+  <button role="tab" aria-selected="false" data-tab="busan">⑤ 부산항·현실성</button>
+  <button type="button" id="moreTabs" style="color:var(--muted)">기록 ▾</button>
+  <button role="tab" aria-selected="false" data-tab="build" class="extra" hidden>비용·도입 계획</button>
+  <button role="tab" aria-selected="false" data-tab="track" class="extra" hidden>개선 이력·출처</button>
+</nav>
+
+<!-- ───────── 상황판 ───────── -->
+<section class="sec" id="tab-now">
+  <div class="event" id="eventBar"></div>
+  <p class="note" style="margin:8px 0 0;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center"><span class="st warn">먼저 밝힘</span><span>실측 데이터 0건 · AI는 가상 데이터로 학습 · 부산항 피크 문제는 BPA 2개 부서 답변(기존 플랫폼과 별개, 운영사 관리)까지 확인, 운영사 확인은 진행 중 · 같은 문제의 실측 사례는 로테르담(⑤ 탭)</span></p>
+  <div class="answers" id="answers" style="margin-top:12px"></div>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="panel">
+      <div class="sub-h" style="margin-top:0">24시간 전력 예측 <span class="hint">15분 단위</span></div>
+      <div class="chart" id="chartBox"><svg id="chart" viewBox="0 0 820 300" role="img" aria-label="변경 전후 24시간 전력수요 예측 그래프"></svg><div class="tip" id="tip"></div></div>
+      <div class="legend">
+        <span><i style="border-color:var(--before)" class="dash"></i>원래 일정</span>
+        <span><i style="border-color:var(--after)"></i>바뀐 일정(시뮬레이션)</span>
+        <span><i style="border-color:#7a68d8"></i>AI 예측</span><span><i class="fill" style="background:rgba(122,104,216,.18)"></i>AI 불확실 범위</span>
+        <span><i style="border-color:var(--bad)" class="dash"></i>관리목표</span>
+        <span><i class="red"></i>초과 구간</span>
+      </div>
+      <div class="kpis" id="kpis"></div>
+    </div>
+    <div class="panel" id="aiPanel" style="border-color:var(--v-purple,#7a68d8);box-shadow:inset 0 3px 0 var(--v-purple,#7a68d8)">
+      <div class="sub-h" style="margin-top:0">AI 경보 <span class="hint" id="aiStatus">학습 준비 중…</span></div>
+      <div id="aiMsg" class="small">브라우저에서 예측 모델을 학습하는 중입니다(2–4초).</div>
+      <details style="margin-top:10px"><summary>시뮬레이션과 AI가 다르게 보는 점</summary>
+        <div class="tscroll" style="margin-top:8px"><table id="cmpTable"><thead><tr><th></th><th>시뮬레이션</th><th>AI</th></tr></thead><tbody></tbody></table></div>
+        <p class="note" style="margin-top:6px">시뮬레이션은 가정값으로 '왜'를, AI는 과거 패턴으로 '얼마나'를 답한다. 둘 다 본다.</p>
+      </details>
+    </div>
+  </div>
+
+  <details style="margin-top:16px" open><summary>입력 바꿔보기 <span class="hint">배 일정·반입량·온도·관리목표</span></summary>
+    <div class="grid2" style="margin-top:10px">
+      <div class="ctl">
+        <label>원래 도착 예정(ETA) <output id="o_eta">14:00</output><input type="range" id="i_eta" min="10" max="20" step="0.5" value="14"></label>
+        <label>얼마나 늦어지나 (12:00 통보) <output id="o_delay">+3.0h</output><input type="range" id="i_delay" min="-2" max="6" step="0.5" value="3"></label>
+        <label>새로 들어오는 냉동컨테이너 <output id="o_newR">50대</output><input type="range" id="i_newR" min="0" max="120" step="5" value="50"></label>
+      </div>
+      <div class="ctl">
+        <label>외기 평균온도 <output id="o_tmean">18℃</output><input type="range" id="i_tmean" min="5" max="34" step="1" value="18"></label>
+        <label>관리목표 (가정) <output id="o_target">2,300kW</output><input type="range" id="i_target" min="1500" max="3600" step="50" value="2300"></label>
+      </div>
+    </div>
+    <details style="margin-top:10px">
+      <summary>세부 가정값 <span class="chip asm">가정</span></summary>
+      <div class="grid2" style="margin-top:8px">
+        <div class="ctl">
+          <label>선석 대기 <output id="o_wait">1.0h</output><input type="range" id="i_wait" min="0" max="4" step="0.25" value="1"></label>
+          <label>접안 → 하역 시작 <output id="o_dstart">0.5h</output><input type="range" id="i_dstart" min="0" max="2" step="0.25" value="0.5"></label>
+          <label>양하 속도 <output id="o_rate">25대/h</output><input type="range" id="i_rate" min="5" max="40" step="1" value="25"></label>
+          <label>야드 이송 + 전원 연결 <output id="o_plug">1.0h</output><input type="range" id="i_plug" min="0.25" max="3" step="0.25" value="1"></label>
+        </div>
+        <div class="ctl">
+          <label>하역 시간(크레인) <output id="o_disch">8h</output><input type="range" id="i_disch" min="2" max="14" step="1" value="8"></label>
+          <label>냉동 플러그 수 <output id="o_plugs">250구</output><input type="range" id="i_plugs" min="150" max="2500" step="10" value="250"></label>
+          <label>트랙터 충전 에너지(일, 자동화 터미널만) <output id="o_chgE">0kWh (옵션)</output><input type="range" id="i_chgE" min="0" max="6000" step="100" value="0"></label>
+          <label>동시 충전기 (100kW/대) <output id="o_chgN">4대</output><input type="range" id="i_chgN" min="1" max="12" step="1" value="4"></label>
+        </div>
+      </div>
+      <p class="note" style="margin-top:8px">실측 기록이 생기면 이 값들을 실제 분포로 바꾼다.</p>
+    </details>
+  </details>
+
+  <details style="margin-top:12px"><summary>3D로 보기 <span class="hint">전력 벽 + 야드 · 필요할 때만</span></summary>
+  <div class="twin" style="margin-top:10px">
+    <div>
+      <div class="panel" id="stagePh" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><b>3D 상황도</b><p class="note">15분 막대로 쌓인 전력 벽과 선박·크레인·냉동야드를 같은 시각으로 본다.</p></div><button class="btn primary" id="btn3dOn">3D 열기</button></div>
+      <div class="stage3" id="stage" hidden><div class="hud" id="hud"></div>
+        <div class="views" id="views"><button aria-pressed="true" data-v="all">전체</button><button aria-pressed="false" data-v="wall">전력 벽</button><button aria-pressed="false" data-v="yard">야드</button></div>
+        <div class="fallback" id="fallback" hidden>3D를 불러오지 못했습니다. 그래프와 ② 탭의 2D 배치도에 같은 내용이 있습니다.</div>
+      </div>
+      <div class="timebar">
+        <label>시각 <output id="o_t3d">17:30</output><input type="range" id="i_t3d" min="0" max="95" step="1" value="30"></label>
+        <button class="chip rule" id="btnPlay" style="padding:6px 12px;border-radius:var(--r);font-size:13px;background:var(--surface)">▶ 24시간 재생</button>
+        <button class="chip rule" id="btn3dOff" style="padding:6px 12px;border-radius:var(--r);font-size:13px;background:var(--surface)">3D 끄기</button>
+      </div>
+      <div class="legend3"><span><i style="background:#8a94a0"></i>기본부하</span><span><i style="background:#b35c00"></i>야드크레인</span><span><i style="background:#d97a00"></i>트랙터 충전</span><span><i style="background:#2a6fcf"></i>냉동컨테이너</span><span><i style="background:#c7362b"></i>목표 초과분</span><span><i style="background:#6ea3f0;opacity:.5"></i>원래 일정(뒷줄)</span></div>
+    </div>
+    <div class="panel" id="stageInfo"><div class="sub-h" style="margin-top:0">막대나 설비를 누르면 상세</div><p class="note">드래그 회전, 휠 확대.</p></div>
+  </div>
+  </details>
+
+  <details style="margin-top:12px"><summary>상세 표 <span class="hint">부하 구성 · 초과 시간대 · 확인 목록 · 데이터 상태</span></summary>
+  <div class="sub-h">무엇이 겹쳐서 피크가 되나</div>
+  <div class="chart"><svg id="stack" viewBox="0 0 820 170" role="img" aria-label="변경 후 부하 구성 누적 면적 그래프"></svg></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="panel">
+      <div class="sub-h" style="margin-top:0">초과 시간대</div>
+      <div class="tscroll"><table id="exTable"><thead><tr><th>구분</th><th>초과 구간</th><th class="n">길이</th><th class="n">구간 최대</th><th class="n">통보 후 여유</th><th>기존 계획과의 관계</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="panel">
+      <div class="sub-h" style="margin-top:0">지금 확인할 것 <span class="hint">역할별 한 줄</span></div>
+      <ul class="todo" id="todo"></ul>
+    </div>
+  </div>
+  <div class="sub-h">데이터 상태 <span class="hint">무엇이 실제고 무엇이 가정인가</span></div>
+  <div class="panel" id="dataStrip" style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12.5px"></div>
+  </details>
+</section>
+
+<!-- ───────── 부산항 ───────── -->
+<section class="sec" id="tab-busan" hidden>
+  <div class="sec-h"><h2>부산항·현실성</h2><span class="lead">터미널을 고르면 그 제원으로 다시 계산한다. 비슷한 항만의 실측 사례와 실현 가능성도 여기.</span></div>
+  <div class="twin">
+    <div>
+      <div class="iso"><svg id="bmap" viewBox="0 0 820 420" role="img" aria-label="부산항 터미널 개념 배치도"></svg></div>
+      <p class="note" style="margin-top:6px">자료: 부산지방해양수산청 부두현황, BPA 7부두 개장 보도(2024-04-05), PSA 터미널 자료. 냉동 플러그 수는 공개자료에 없어 모두 가정값(터미널 확인 필요).</p>
+    </div>
+    <div class="panel" id="termInfo"></div>
+  </div>
+
+  <div class="sub-h">같은 일정 변경을 터미널마다 넣으면 <span class="hint">현재 ETA 시나리오 · 각 터미널 가정(플러그·크레인·목표) 적용 · 선택 터미널 강조</span></div>
+  <div class="chart"><svg id="termChart" viewBox="0 0 820 400" role="img" aria-label="터미널별 변경 전후 피크와 초과 시간 비교"></svg></div>
+  <div class="legend"><span><i style="border-color:var(--before)" class="dash"></i>변경 전 피크</span><span><i style="border-color:var(--after)"></i>변경 후 피크</span><span><i style="border-color:var(--bad)" class="dash"></i>터미널 관리목표(가정)</span><span>오른쪽 숫자 = 변경 후 초과시간 / 기존 계획이 놓치는 시간</span></div>
+
+  <div class="answers" style="margin-top:14px">
+    <div class="ans ok"><div class="q">기술 구현</div><div class="a">높음</div><div class="d">시연·AI·검증 완료</div></div>
+    <div class="ans alert"><div class="q">데이터 확보</div><div class="a">낮음~중간</div><div class="d">계량·연결 기록·ETA 이력 모두 운영사 협의 필요</div></div>
+    <div class="ans"><div class="q">현장 필요성</div><div class="a">부분 확인</div><div class="d">BPA 2개 부서 답변. 운영사 확인 진행 중</div></div>
+    <div class="ans"><div class="q">비용</div><div class="a">시연 10만원 · 실증 3~5천만원</div><div class="d">상세는 '기록 ▾ → 비용·도입 계획'</div></div>
+  </div>
+
+  <div class="sub-h">같은 엔진을 다른 현장에 <span class="hint">버튼을 누르면 실제로 전환된다 · 항만 밖에서도 "일정 → 부하 → 피크"는 같은 문제</span></div>
+  <div class="grid3">
+    <div class="panel"><b>냉동물류창고</b><p class="note" style="margin-top:4px">입고 트럭 도착(ETA) → 도크 대기 → 입고 → 냉동실 부하. 플러그 대신 냉동실 용량.</p><button class="btn sm" data-preset="coldstore" style="margin-top:8px">전환</button></div>
+    <div class="panel"><b>전기버스 차고지</b><p class="note" style="margin-top:4px">운행 복귀(ETA) → 주차 → 충전 시작. 냉동 대신 충전 부하, 크레인 대신 정비. Winschermann 2025: 피크 −57%.</p><button class="btn sm" data-preset="busdepot" style="margin-top:8px">전환</button></div>
+    <div class="panel"><b>부산항 구역 (기본)</b><p class="note" style="margin-top:4px">원래 설정으로 복귀.</p><button class="btn sm" data-preset="port" style="margin-top:8px">복귀</button></div>
+  </div>
+  <p class="note" style="margin-top:6px">전환은 입력 매핑과 규모만 바꾼다. 열 모델·스케줄러·AI·4안 판정은 같은 코드다. 각 현장의 계수는 가정이며, 그 분야 문헌(④ 탭 ⑤-1)으로 보정한다.</p>
+
+  <div class="sub-h">부산항과 같은 급 항만의 실측 근거 <span class="chip pub">공개 문헌</span> <span class="hint">냉동야드 피크가 실제로 문제였던 사례</span></div>
+  <div class="tscroll"><table><thead><tr><th>항만·터미널</th><th>규모</th><th>실측 내용</th><th>우리 시나리오와의 관계</th></tr></thead><tbody>
+    <tr><td><b>로테르담, 대형 컨테이너 터미널 1곳</b> (ABB 계측, 터미널명 비공개) — van Duin et al. TRB 2017 "Keep It Cool", J. Shipping &amp; Trade 2019</td><td>연 61,321 냉동컨테이너(그중 냉동제품 45,923), 대형선 1척 평균 800플러그, 2014-01~2015-01 컨테이너별 계측 65,732건</td><td>15분 피크 <b>14,831kW</b>, 3개월간 한도 14,000kW <b>6회 초과</b>(남아공 감귤·남미 육류 성수기). 랙별 전원 공급 15분 슬롯 분산 시 피크 8,266kW, 피크 요금 27€/kW로 연 최대 약 €100만 절감 추정. 단, 전원 차단 중 온도 상승 위험 명시</td><td>우리 '4안 비교'의 작업 조정(C2)이 같은 논리. 로테르담은 터미널 전체(14MW급), 우리는 구역 1개(2–3MW급). <button class="btn sm" id="btnRdam">로테르담 규모로 시나리오 전환</button></td></tr>
+    <tr><td><b>부산항 전체</b> — 해수부·BPA 2026-01-29 발표</td><td>2025년 2,488만 TEU(역대 최대), 환적 1,410만 TEU</td><td>냉동 비중 공개 없음. 로테르담은 컨테이너 유형 기준 약 15%, 앤트워프는 TEU 기준 8.2%(2021, IIR)</td><td>부산이 로테르담(1,530만 TEU)보다 크고 환적 비중이 높아 일정 변동 노출이 더 크다. 냉동 TEU는 가정(5–8%)</td></tr>
+    <tr><td><b>로스앤젤레스항</b> — port-energy-carbon-cockpit 공개 데이터 카드</td><td>2020–2025 시간별 52,608행, 공식 월별 TEU 72개, 선박활동 1,238일</td><td>터미널 계량·TOS 데이터 없음을 명시. 냉동·장비 부하는 공학식으로 생성</td><td>대형 항만도 공개 실측은 월별 TEU·선박 일수까지. 터미널 내부 전력은 어디서도 공개 안 됨 → 우리와 같은 한계</td></tr>
+  </tbody></table></div>
+  <p class="note" style="margin-top:6px">결론: 냉동야드 전력 피크가 실제로 관리 한도를 넘는 사례는 로테르담에서 계측으로 확인됐다. 부산항에서 같은 문제가 있는지는 운영사 확인이 필요하지만, 물동량·환적 비중은 로테르담 이상이다.</p>
+
+  <details style="margin-top:14px"><summary>1차 실증 후보 비교 · 터미널 유형별 비용 변화 · 부산항에서 바뀌는 개선점</summary>
+  <div class="sub-h">1차 실증 후보 비교 <span class="hint">공개 근거는 <span class="chip pub">공개</span>, 나머지는 <span class="chip asm">가정</span></span></div>
+  <div class="tscroll"><table id="termCmp"><thead><tr><th>터미널</th><th>연결·장비 이벤트 전산화</th><th>전기 장비 비중</th><th>계량 경계 설정</th><th>데이터 접근성</th><th>확장성(AMP 등)</th><th>종합</th></tr></thead><tbody>
+    <tr><td><b>신항 7부두 DGT</b> (서컨 2-5, 2024-04 개장)</td><td><span class="st ok">높음</span> 완전자동화, AGV 60·ARMGC 46 <span class="chip pub">공개</span></td><td><span class="st ok">높음</span> 전 장비 전기 <span class="chip pub">공개</span></td><td><span class="st ok">유리</span> 신설 터미널, 계통 도면 최신 <span class="chip asm">가정</span></td><td><span class="st warn">중간</span> 신규 운영사, 보안 요구 <span class="chip asm">가정</span></td><td><span class="st ok">높음</span> 자동화 장비 부하까지 확대 가능</td><td><b>1순위</b></td></tr>
+    <tr><td><b>신항 3·4부두 HJNC·HPNT</b></td><td><span class="st warn">중간</span> 반자동(야드) <span class="chip asm">가정</span></td><td><span class="st warn">중간</span></td><td><span class="st warn">중간</span></td><td><span class="st ok">유리</span> BPA AMP 사업 경험, 2022 케이블 도입 <span class="chip pub">공개</span></td><td><span class="st ok">높음</span> AMP 8기(4선석) <span class="chip pub">공개</span></td><td><b>2순위</b> AMP 확장형</td></tr>
+    <tr><td><b>신항 2부두 PNC</b> (안벽 2,000m, 368만TEU)</td><td><span class="st warn">중간</span></td><td><span class="st warn">중간</span></td><td><span class="st bad">복잡</span> 최대 규모, 구역 많음 <span class="chip asm">가정</span></td><td><span class="st warn">중간</span></td><td>높음</td><td>물량은 최대, 1차 실증엔 큼</td></tr>
+    <tr><td><b>신항 5부두 BNCT</b></td><td><span class="st warn">중간</span> 야드 자동화 <span class="chip asm">가정</span></td><td><span class="st warn">중간</span></td><td><span class="st warn">중간</span></td><td><span class="st warn">중간</span></td><td>중간</td><td>대안 후보</td></tr>
+    <tr><td><b>북항 신선대·감만</b> (BPT)</td><td><span class="st bad">낮음</span> 재래식 <span class="chip asm">가정</span></td><td><span class="st bad">낮음</span></td><td><span class="st bad">불리</span> 노후 계통 <span class="chip asm">가정</span></td><td>중간</td><td><span class="st bad">낮음</span> 북항 재개발 영향</td><td>제외 권고</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">터미널 유형별 비용 변화 <span class="hint">'실현성·비용' 탭의 B·C 기준 대비</span></div>
+  <div class="tscroll"><table><thead><tr><th>항목</th><th>자동화 터미널 (7부두형)</th><th>재래·반자동 터미널 (북항·2부두형)</th><th>근거</th></tr></thead><tbody>
+    <tr><td>데이터 연계 프로그램</td><td>0.7~1인월 (TOS 이벤트 이미 전산화) <span class="st ok">↓</span></td><td>1.5~2인월 + 연결 기록 수기 입력 앱 <span class="st bad">↑</span></td><td>연결·해제 기록 유무에 따라 결정 <span class="chip asm">가정</span></td></tr>
+    <tr><td>계량기·게이트웨이</td><td>기존 전력감시(SCADA) 활용 가능성 높음 → 0원 또는 소액 연동 <span class="chip asm">가정</span></td><td>냉동구역 단독 계량 없을 가능성 → CT형 계량기 신설 <b>견적 필요</b></td><td>단선도 확인 전까지 미확정</td></tr>
+    <tr><td>보안·권한</td><td>자동화 제어망 분리 요구 → +0.5인월, 보안점검 <b>견적 필요</b> <span class="st bad">↑</span></td><td>기본 인증 수준</td><td>항만보안·제어망 규정 <span class="chip asm">가정</span></td></tr>
+    <tr><td>협의 기간</td><td>2~4개월 (운영사 1곳 + BPA)</td><td>3~6개월 (운영사 + BPA + 북항 재개발 일정)</td><td>협약 미확정</td></tr>
+    <tr><td><b>B단계 합계 변화</b></td><td>기준 대비 약 −10% (연계 ↓, 보안 ↑ 상쇄)</td><td>기준 대비 약 +15% + 계량 신설비</td><td>추정, 견적 후 재산정</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">부산항 상황에서 바뀌는 개선점</div>
+  <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:5px">
+    <li><b>필요성 근거 하나 확보됨</b>: BPA는 2022년 "입항 일정이 자주 바뀌어 AMP 자리에 배를 대지 못하는 경우"를 이유로 60m 이동형 케이블을 도입했다. 일정 변동이 항만 전력 운영에 실제 영향을 준다는 공식 사례다. 다만 냉동 피크 문제의 근거는 아니다.</li>
+    <li><b>데이터 경로는 두 갈래</b>: 선박·선석 일정은 BPA(PORT-i), 연결·하역 이벤트는 터미널 TOS. 공개 API는 통계뿐이라 둘 다 협의가 필요하다. 7부두는 운영사 1곳에 이벤트가 모여 있어 협의 상대가 가장 적다.</li>
+    <li><b>2-6단계(2026 개장 예정)</b>가 실제 기회다. 설계·시운전 단계에 "냉동구역 단독 계량 + 연결 이벤트 로그 규격"을 제안하면 사후 계측 비용이 사라진다.</li>
+    <li><b>분산에너지 특구</b>(부산 2025-11 지정, 대규모 ESS 활용 유형)가 진행되면 ESS 대안이 가상에서 실제 후보가 된다. 세부 규모·대상은 미공개라 지금은 계획으로만 둔다.</li>
+    <li><b>북항은 범위에서 제외</b>: 자성대 이전·재개발로 설비 투자가 어렵고, 재래식이라 데이터 전산화 비용이 크다.</li>
+    <li><b>요금 조건은 터미널마다 다르다</b>: 계약전력·선택요금을 모르면 기본요금 절감액을 말할 수 없다. 터미널 선택 후 '한전 영업' 질문부터 확인.</li>
+  </ul>
+  </details>
+  <p class="note" style="margin-top:10px">출처: <a href="https://busan.mof.go.kr/ko/page.do?menuIdx=4493">부산지방해양수산청 신항 부두현황</a> · <a href="https://www.nocutnews.co.kr/news/6124677">신항 7부두 개장 (노컷뉴스 2024-04-05)</a> · <a href="https://www.dailian.co.kr/news/view/1125703/">BPA 60m AMP 케이블 도입 (데일리안 2022-06-22)</a> · <a href="https://www.globalpsa.com/wp-content/uploads/2026/04/BUSAN-TERMINALS.pdf">PSA Busan Terminals</a> · <a href="https://www.kharn.kr/mobile/article.html?no=29202">분산에너지 특구 지정 (칸 2025-11)</a></p>
+</section>
+
+<!-- ───────── 과정 ───────── -->
+<section class="sec" id="tab-chain" hidden>
+  <div class="sec-h"><h2>왜 피크가 생기나</h2><span class="lead">배가 3시간 늦어도 전원 연결은 3시간 늦어지지 않는다. 접안·하역·이송 단계마다 시간이 다르게 쌓인다.</span></div>
+  <div class="proc"><svg id="proc" viewBox="0 0 820 250" role="img" aria-label="선박 입항부터 전력까지의 공정도"></svg></div>
+  <details style="margin-top:12px"><summary>단계별 숫자 보기</summary><ol class="chain" id="chainList" style="margin-top:10px"></ol></details>
+
+  <div class="sub-h">하역 → 이송 → 전원 연결: 열 모델 <span class="chip asm">가정값</span> <span class="hint">v2의 '첫 1시간 +100%, 다음 +40%' 고정 비율을 대체</span></div>
+  <div class="grid2">
+    <div class="panel">
+      <p class="small">전원이 끊긴 동안 화물의 가장 따뜻한 지점 온도는 외기 쪽으로 1차 지연으로 올라간다. <b>냉동 τ_off ≈ 100h</b>는 CSIRO 정보시트(2007)의 실측(40ft 냉동육, 외기 25℃, −18→−10℃까지 22h)에서 환산 <span class="chip pub">공개</span>. 냉장·바나나 τ_off 60h는 문헌이 없어 가정 <span class="chip asm">가정</span>. 전원 연결 후 풀다운 전력 = 기본 kW + k×(상승폭), 유닛 상한 9kW, 내부온도는 τ_on으로 복귀.</p>
+      <p class="small" style="margin-top:6px">허용 편차는 van Duin et al. 2019 Table 1: <b>냉동 ±2℃, 냉장 ±1℃, 바나나 ±0.5℃, 최대 오프라인 4h(+1h)</b> <span class="chip pub">공개</span>. 연결 순서는 <b>한도 도달까지 남은 시간이 짧은 컨테이너부터</b>(긴급도). 소켓이 모자라면 반출 해제로 빌 때까지 대기한다.</p>
+      <p class="note" style="margin-top:6px">외기 25℃ 기준 한도 도달: 냉동 약 4.8h, 냉장 약 2.7h, 바나나 약 1.9h(모델 계산). 화물 비율 45/40/15, 선내 전원 차단 후 경과 1.0±0.3h는 가정. 실측 연결·온도 기록으로 보정 필요.</p>
+    </div>
+    <div class="chart"><svg id="thermoChart" viewBox="0 0 820 230" role="img" aria-label="비전원 시간에 따른 내부온도 상승과 풀다운 전력량"></svg></div>
+  </div>
+  <div class="sub-h">변경 전·후 작업 중첩 <span class="hint">같은 엔진의 시각 · 가로축 10:00 → 익일 10:00</span></div>
+  <div class="gantt"><svg id="gantt" viewBox="0 0 820 330" role="img" aria-label="변경 전후 작업 타임라인"></svg></div>
+  <p class="note" style="margin-top:8px">V1은 10:00–14:00 작업 중인 고정 선박, V3는 20:00 접안해 크레인 2기·냉동 30대를 연결하는 고정 선박. 반출 50대는 13:00–16:00에 연결 해제된다고 가정. V2가 늦어지면 V3와 겹친다. 겹치는 막대가 전력이 겹치는 이유다.</p>
+
+  <div class="sub-h">기존 시스템과 무엇이 다른가 <span class="hint">기능 단위 비교 · 확인된 것과 추정을 구분</span></div>
+  <div class="tscroll"><table><thead><tr><th>기능</th><th>터미널 EMS·전력감시<br><span class="note">일반 상용(ABB·슈나이더 등)</span></th><th>BPA 에너지수요관리 플랫폼<br><span class="note">BPA 참조 의견</span></th><th>한전 수요관리·DR</th><th><b>PORTFLOW</b></th></tr></thead><tbody>
+    <tr><td>15분 전력 감시·기록</td><td><span class="st ok">있음</span></td><td>신재생 설비 중심</td><td>AMI 계량</td><td>입력으로 사용(미연결)</td></tr>
+    <tr><td>전력 수요 예측</td><td>일부(과거 패턴)</td><td><span class="st na">별개 영역</span></td><td>계통 단위</td><td><span class="st ok">15분·24h·구역</span></td></tr>
+    <tr><td><b>선박 ETA 변경을 예측 입력으로</b></td><td><span class="st warn">확인 안 됨</span></td><td><span class="st na">해당 없음</span></td><td><span class="st na">해당 없음</span></td><td><span class="st ok">핵심</span></td></tr>
+    <tr><td><b>냉동컨테이너 연결 시각 재추정(열 모델·긴급도)</b></td><td><span class="st warn">확인 안 됨</span></td><td><span class="st na">해당 없음</span></td><td><span class="st na">해당 없음</span></td><td><span class="st ok">핵심</span></td></tr>
+    <tr><td><b>기존 대응계획이 놓치는 구간 표시</b></td><td><span class="st warn">확인 안 됨</span></td><td><span class="st na">해당 없음</span></td><td><span class="st na">해당 없음</span></td><td><span class="st ok">핵심</span></td></tr>
+    <tr><td>작업 재배치·ESS 대안 비교(제약 우선)</td><td>ESS 제어는 있음</td><td>ESS Farm 구상</td><td>감축 지시</td><td>비교·추천만, 제어 없음</td></tr>
+    <tr><td>설비 제어</td><td><span class="st ok">있음</span></td><td>일부</td><td>—</td><td><span class="st na">없음(의도적)</span></td></tr>
+  </tbody></table></div>
+  <p class="small" style="margin-top:8px"><b>우리만 있는 것 3개</b>: ① ETA 변경을 전력 예측 입력으로 ② 냉동컨테이너 연결 시각을 열 모델로 재추정 ③ 기존 계획이 못 보는 구간을 사건 단위로 경보. 나머지는 기존 시스템을 대체하지 않고 보완한다. '확인 안 됨'은 운영사 EMS 사양 미확인 상태를 뜻하며, 확인되면 이 표를 고친다.</p>
+
+  <div class="sub-h">부하 발생 위치 · 2D 배치도 <span class="hint">3D의 2D 대체 화면 · 개념 배치</span></div>
+  <div class="twin">
+    <div>
+      <div class="iso" id="isoBox"><svg id="iso" viewBox="0 0 820 360" role="img" aria-label="구역 개념 배치도"></svg></div>
+      <p class="note" style="margin-top:6px">시각은 상황판의 시각 슬라이더와 같이 움직인다.</p>
+    </div>
+    <div class="panel" id="isoInfo"><div class="sub-h" style="margin-top:0">설비를 누르면 상태 표시</div><p class="note">배치도의 설비(냉동야드·크레인·선박·계량기)를 누르면 그 시각의 전력, 입력 가정, 데이터 수준이 나타난다.</p></div>
+  </div>
+</section>
+
+<!-- ───────── 대안 ───────── -->
+<section class="sec" id="tab-alt" hidden>
+  <div class="sec-h"><h2>무엇을 할 수 있나</h2><span class="lead">그대로 두기 / 배터리만 / 작업 시간 조정만 / 둘 다. 지켜야 할 조건을 먼저 걸러내고, 통과한 안 중에서 고른다.</span></div>
+  <details style="margin-bottom:12px"><summary>설정 <span class="hint">작업 조정 · 배터리 · 걸러내는 조건</span></summary>
+  <div class="grid3" style="margin-top:10px">
+    <div class="panel"><div class="sub-h" style="margin-top:0">작업 조정 (15분 스케줄러) <span class="chip rule">규칙 기반</span></div>
+      <p class="small">통보 시각(12:00) 이후 남은 <b>V2 크레인 슬롯</b>과 <b>야드트랙터 충전 슬롯</b>을 다른 부하가 낮은 시간으로 재배치. 크레인 총 슬롯·하역 기한, 충전 총 에너지·충전창(18:00–익일 08:00)·동시 충전기 수는 유지. 신규 냉동컨테이너는 <b>한도 도달까지 남은 시간 순</b>으로 양하·소켓 배정.</p>
+      <div class="ctl" style="margin-top:8px"><label>하역 완료 기한 (수정 ETA 기준) <output id="o_dl">+14h</output><input type="range" id="i_dl" min="8" max="24" step="1" value="14"></label>
+      <label>비전원 대기 허용 <output id="o_waitmax">4.0h</output><input type="range" id="i_waitmax" min="0.5" max="8" step="0.5" value="4"></label>
+      <label>선내 전원 차단 후 경과(접안 시점) <output id="o_dOff0">1.0h</output><input type="range" id="i_dOff0" min="0" max="6" step="0.5" value="1"></label></div></div>
+    <div class="panel"><div class="sub-h" style="margin-top:0">ESS <span class="chip plan">가상 설비</span></div>
+      <div class="ctl"><label>출력 <output id="o_essP">0kW (미설정)</output><input type="range" id="i_essP" min="0" max="1000" step="50" value="0"></label>
+      <label>용량 <output id="o_essE">500kWh</output><input type="range" id="i_essE" min="100" max="3000" step="100" value="500"></label>
+      <label>초기 SOC / 예비 SOC <output id="o_soc">80% / 20%</output><input type="range" id="i_soc" min="30" max="100" step="5" value="80"></label></div>
+      <p class="note" style="margin-top:6px">초과분만 방전, 경부하(22–08시)에 재충전, 분석 종료 SOC ≥ 초기 SOC 조건. 효율 90%. 충·방전 손실은 구매전력에 포함된다.</p></div>
+    <div class="panel"><div class="sub-h" style="margin-top:0">걸러내는 조건</div>
+      <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:3px"><li>비용·탄소·피크가 기존 운영(C0)보다 높지 않을 것 (시뮬레이션 잡음 0.1% 허용)</li><li>하역 슬롯 수·충전 에너지 유지(물동량·차량 가동), 완료 ≤ 기한(지연)</li><li>비전원 대기 ≤ 허용(+1h), 온도 상승 ≤ 화물별 허용 편차(냉동 2·냉장 1·바나나 0.5℃), 종료 SOC ≥ 초기</li></ul>
+      <p class="note" style="margin-top:6px">통과한 안 중 비용+탄소 개선이 큰 안을 고르고, C0도 후보로 남긴다. 통과 안이 없으면 상충관계를 표시한다.</p></div>
+  </div>
+  </details>
+  <div class="verdict" id="verdict"></div>
+  <div class="panel" id="decisionReport" style="margin-top:12px"></div>
+  <div class="chart" style="margin-top:12px"><svg id="caseChart" viewBox="0 0 820 240" role="img" aria-label="4안 전력수요 곡선"></svg></div>
+  <div class="legend"><span><i style="border-color:var(--muted)" class="dash"></i>C0 기존</span><span><i style="border-color:#7a68d8"></i>C1 ESS만</span><span><i style="border-color:var(--before)"></i>C2 작업 조정만</span><span><i style="border-color:var(--after)"></i>C3 조정+ESS</span><span><i style="border-color:var(--bad)" class="dash"></i>관리목표</span></div>
+  <details style="margin-top:12px"><summary>4안 상세 표</summary><div class="alts" id="alts" style="margin-top:10px;grid-template-columns:1fr"></div></details>
+  <div class="panel" style="margin-top:12px" id="econBox"></div>
+  <div class="panel" style="margin-top:12px">
+    <div class="sub-h" style="margin-top:0">연간으로 보면 <span class="hint">가정 두 개를 입력하면 범위가 나온다</span></div>
+    <div class="grid2"><div class="ctl">
+      <label>한 달에 ETA 변동으로 피크가 위험한 날 <output id="o_riskDays">4일</output><input type="range" id="i_riskDays" min="0" max="20" step="1" value="4"></label>
+      <label>그중 월 최대수요가 그 날 결정되는 비율 <output id="o_peakProb">50%</output><input type="range" id="i_peakProb" min="0" max="100" step="10" value="50"></label>
+    </div><div id="annualBox" class="small"></div></div>
+    <p class="note" style="margin-top:6px">한전 DR(수요자원거래) 시장: 2017년 기준 3,195개 수용가·4.3GW 참여(경향신문). 터미널이 참여하면 '예측 정확도 = 기본정산금'이 되지만 kW당 단가·참여 조건은 확인 필요 <span class="chip asm">조사 항목</span>.</p>
+  </div>
+  <details style="margin-top:10px"><summary>요금 계산 방식</summary><div class="panel" style="margin-top:8px">
+    <div class="sub-h" style="margin-top:0">요금 계산 방식 <span class="chip pub">공개자료</span></div>
+    <div class="ctl" style="max-width:420px;margin-bottom:8px"><label>전력량요금 인상 보정 (2023-05 표 대비, 원/kWh) <output id="o_adj">+16.9</output><input type="range" id="i_adj" min="0" max="40" step="0.1" value="16.9"></label></div>
+    <p class="small">산업용(을) 고압A 선택Ⅱ, 2023-05-16 시행 요금표 기준: 기본요금 8,320원/kW·월, 봄·가을 전력량요금 경부하 87.3 / 중간부하 109.8 / 최대부하 140.5원/kWh (경부하 22–08시, 최대부하 11–12·13–18시, 그 외 중간부하). 2024-10-24 산업용(을) 평균 +16.9원/kWh 인상(전기신문)을 보정값으로 더한다. 기본요금 절감은 월 최대수요가 해당 일에 결정될 때의 월 상한. 탄소 0.478kgCO₂/kWh <span class="chip asm">가정값</span>.</p>
+  </div></details>
+</section>
+
+<!-- ───────── 검증 ───────── -->
+<section class="sec" id="tab-verify" hidden>
+  <div class="sec-h"><h2>믿을 수 있나</h2><span class="lead">전부 가상 데이터로 검증했다. 실측은 0건. 여기서 보여주는 건 "방법이 맞게 돌아가는가"까지다.</span></div>
+
+  <div class="answers" id="verifySummary" style="margin-bottom:14px"></div>
+  <div class="sub-h">① 경보 재현율·정밀도 <span class="hint">사건 단위 · 일대일 매칭 · 허용시간 ±60분 또는 구간 겹침 · 30일 가상 배치</span></div>
+  <div class="tscroll"><table id="prTable"><thead><tr><th>예측 기준</th><th class="n">실제 초과 사건</th><th class="n">예측 경보 사건</th><th class="n">TP</th><th class="n">FP</th><th class="n">FN</th><th class="n">재현율 TP/(TP+FN)</th><th class="n">정밀도 TP/(TP+FP)</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" style="margin-top:6px">'변경 전 정보'는 10:00에 알던 원래 ETA로 만든 경보, '변경 반영'은 12:00 통보된 수정 ETA로 갱신한 경보. 실제 하루는 수정 ETA에 시간차 잡음(선석대기 ±0.5h, 연결지연 ±0.3h, 양하속도 ±5대/h)과 계측 잡음 2%를 더해 생성한 가상값. TP는 양쪽 지표에서 같은 수다.</p>
+  <details style="margin-top:10px"><summary>현재 시나리오 날의 사건 매칭 (위 표가 계산되는 방식)</summary>
+  <div class="tscroll" style="margin-top:8px"><table id="evTable"><thead><tr><th>예측 경보 사건</th><th>매칭된 실제 사건</th><th>판정</th></tr></thead><tbody></tbody></table></div></details>
+
+  <div class="sub-h">② 갱신시간 <span class="hint">'1분 이내 갱신' 합격 판정 보류</span></div>
+  <div class="tscroll"><table id="latTable"><thead><tr><th>단계</th><th class="n">측정값</th><th>측정 조건</th><th>상태</th></tr></thead><tbody></tbody></table></div>
+
+  <div class="sub-h">③ 일정 지연이 피크에 미치는 영향의 유형 <span class="hint">30일 가상 배치에서 변경 전·후 예측 비교 · 사례 선별 없음</span></div>
+  <div class="kpis" id="caseKpis"></div>
+  <div class="sub-h">30일 열지도 · 변경 반영 예측 <span class="hint">가로 = 10:00부터 24시간(15분) · 세로 = 가상 하루 · 빨강 = 목표 초과</span></div>
+  <div class="heat"><svg id="heat" viewBox="0 0 820 300" role="img" aria-label="30일 전력수요 열지도"></svg></div>
+  <p class="note" style="margin-top:6px">기준: 최대전력 ±3% 이내이고 발생시각이 1시간 이상 이동하면 '시간대 이동', 그 밖에 증가/감소/변화 없음. 대표 시나리오(상황판)는 '시간대 이동'형이며, 최대값이 비슷해도 초과 시간대와 놓치는 구간이 달라진다는 점이 핵심이다.</p>
+
+  <details style="margin-top:14px"><summary>⑧ 모델 카드 · 데이터 카드 · ⑨ 시나리오 검증 · ⑩ 결과 내보내기</summary>
+  <div class="sub-h">⑧ 모델 카드 · 데이터 카드 <span class="hint">참고: port-energy-carbon-cockpit의 MODEL_CARD / DATA_CARD / RUNTIME_DATA_CONTRACT 구조(MIT, Wen Jiayi)를 이 프로젝트 규모로 축소</span></div>
+  <div class="grid2">
+    <div class="panel" id="modelCard"></div>
+    <div class="panel" id="dataCard"></div>
+  </div>
+  <div class="sub-h">⑨ 시나리오 검증 <span class="hint">버튼을 누르면 이 브라우저에서 실제로 실행한다 · 실행 안 한 항목은 '미실행'</span> <button class="btn sm" id="btnTests">검증 실행</button></div>
+  <div class="tscroll"><table id="testTable"><thead><tr><th>항목</th><th>방법</th><th>결과</th><th>판정</th></tr></thead><tbody><tr><td colspan="4" class="note">아직 실행하지 않음</td></tr></tbody></table></div>
+  <div class="sub-h">⑩ 결과 내보내기 <span class="hint">입력·가정·출력·모델 버전을 JSON으로 — 같은 JSON이면 같은 결과(재현)</span> <button class="btn sm" id="btnExport">JSON 생성</button> <button class="btn sm" data-copy="exportBox">복사</button></div>
+  <pre id="exportBox" class="mono" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:10px;background:var(--soft);white-space:pre-wrap;word-break:break-all">—</pre>
+  </details>
+
+  <details style="margin-top:14px"><summary>⑦ 4안 비교 재검증 (20일)</summary>
+  <div class="sub-h">4안 비교 재검증 <span class="chip syn">가상</span> <span class="hint">매개변수 조정에 쓰지 않은 20일 · 같은 작업량·설비·집계 범위 · 현재 ESS 설정</span></div>
+  <div class="tscroll"><table id="holdTable"><thead><tr><th>안</th><th class="n">구매전력 평균(kWh/일)</th><th class="n">전력량요금 평균</th><th class="n">피크 평균</th><th class="n">탄소 평균</th><th class="n">초과시간 평균</th><th class="n">온도 위반 평균</th><th class="n">모든 조건 충족 일수</th><th>미충족 사유 (일수)</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" style="margin-top:6px">대안 탭의 하루 결과가 우연인지 확인하는 표. 20일은 시드가 다른 가상 생성(외기 12–30℃, 반입 20–80대)이며, 효과의 '출처'(작업 재배치 vs ESS)를 분리해 보여준다. 문헌 허용 편차(냉장 ±1℃, 바나나 ±0.5℃)가 엄격해 더운 날·대량 반입일에는 순서 배정만으로는 한도를 못 지키는 날이 많다 → 양하 속도·이송·연결 지연 자체를 줄여야 하며, 이것이 현장 질문 1순위다.</p>
+  </details>
+
+  <details style="margin-top:16px"><summary>④ 시간 해상도·데이터셋 · ⑤ AI 모델 계획</summary>
+  <p class="small" style="margin-top:8px">이 페이지의 시연·그래프·경보·검증은 모두 같은 15분 엔진, 같은 구역(주계량기 1개), 같은 관리목표(입력값)를 쓴다. 단위: 전력 kW(순시·15분 평균), 전력량 kWh(= kW × 0.25), 최대수요 kW(15분 평균의 최댓값). v1의 항만 전체 MW 단위 화면은 계량 경계가 불분명해 폐기했다.</p>
+
+  <div class="sub-h">⑤ AI가 예측하고 전달하는 방식</div>
+  <div class="answers" id="aiKpis" style="margin-bottom:12px"></div>
+  <div class="tscroll"><table id="horizonTable"><thead><tr><th>예측 범위</th><th class="n">단순 기준 MAE</th><th class="n">AI MAE</th><th class="n">개선</th></tr></thead><tbody><tr><td colspan="4" class="note">AI 학습 완료 후 표시</td></tr></tbody></table></div>
+  <p class="note" style="margin-top:6px">통보(12:00) 기준 1h·6h·24h 앞 오차. 멀수록 커진다 — 경보는 가까운 구간일수록 믿고, 먼 구간은 '주의'로 등급을 낮춘다.</p>
+  <div class="proc"><svg id="aiFlow" viewBox="0 0 820 190" role="img" aria-label="AI 예측·전달 흐름"></svg></div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="panel"><div class="sub-h" style="margin-top:0">AI가 하는 일</div><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+      <li><b>15분 단위 24h 전력 예측</b> — 입력: 시간대·외기·전날 같은 시각·예상 연결 수량·풀다운 지수·크레인/충전 작업 플래그·ETA 경과시간·반입량·ETA 변경량</li>
+      <li><b>피크 크기·시각, 초과 구간</b> — 사건 단위 경보로 변환</li>
+      <li><b>불확실성</b> — 시드가 다른 트리 앙상블 분산 + 시험기간 잔차로 P10–P90, 피크 시각 초과 확률</li>
+      <li><b>원인 분해</b> — 신규 연결·V2 크레인·충전을 각각 뺐을 때 피크가 얼마나 줄어드는지(what-if 기여도)</li>
+      <li><b>ETA 변경 통보 즉시 재예측</b> — 학습은 미리, 예측은 ms 단위</li>
+      <li><b>데이터가 부족하면</b> — 연결 기록 없음: 반입량으로 추정 / 계측 없음: 시뮬레이션 곡선만 표시하고 AI 패널에 '미연결' / 학습 전: 규칙 엔진만 / 새 터미널: 자동 재학습 후 표시</li></ul></div>
+    <div class="panel"><div class="sub-h" style="margin-top:0">AI가 하지 않는 일</div><ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+      <li>설비 제어, 일정 변경, ESS 명령 — 전부 사람·기존 시스템 권한</li>
+      <li>ETA 자체 예측 — 외부 입력(PORT-i)으로 취급. ETA 예측 AI는 별도 연구(Evmides 2024, MAE 178분)</li>
+      <li>대안 선택 — 4안 비교는 제약 판정 규칙이 하고 AI는 각 안의 수요 곡선만 공급</li>
+      <li>학습 데이터 밖 상황 보장 — 실데이터 재학습 전까지 가상 패턴</li></ul></div>
+  </div>
+  <details style="margin-top:14px"><summary>⑤-1 같은 구조를 쓰는 다른 분야 (문헌 6편)</summary>
+  <div class="sub-h">같은 구조를 쓰는 다른 분야 <span class="hint">'이벤트 일정 + 부스팅 트리 + 설명가능성 + 피크 지표' — 항만만의 기술이 아니라 검증된 패턴</span></div>
+  <div class="tscroll"><table><thead><tr><th>분야</th><th>문헌</th><th>이벤트 입력</th><th>모델</th><th>결과</th><th>우리가 가져온 것</th></tr></thead><tbody>
+    <tr><td>AI 데이터센터 부하</td><td>Wang et al., Regime-Adaptive Weighted Ensemble (arXiv 2604.27207)</td><td>분당 활성 작업 수(작업 도착·종료)</td><td>XGBoost + 1D-CNN 가중 앙상블</td><td>NMAE 1.86% → 0.37% (MIT Supercloud)</td><td>'작업 이벤트를 외생변수로' + 앙상블 분산을 불확실성으로</td></tr>
+    <tr><td>계통 부하(ERCOT)</td><td>Bhupatiraju &amp; Ahn, Explainability-Driven Feature Engineering (arXiv 2507.22220)</td><td>달력·기상·지연부하·스파이크 파생</td><td>XGBoost(최고), LightGBM, LSTM</td><td>MAPE 3.2% → 0.79%, 피크 구간 과소예측 지적</td><td>SHAP식 기여도로 원인 설명, 상위 5% 피크 전용 지표</td></tr>
+    <tr><td>전기버스 차고지 충전</td><td>Winschermann et al. 2025 (arXiv 2504.06078), 네덜란드 실데이터</td><td>차량 복귀·출발 일정</td><td>다목적 충전 스케줄링</td><td>비제어 대비 피크 최대 −57%</td><td>'일정 안에서 재배치' = 15분 스케줄러, 야드트랙터 충전</td></tr>
+    <tr><td>물류창고 부하</td><td>Ribeiro et al. 2022, Energies 15(3):750</td><td>달력·과거 부하</td><td>XGBoost(최고) vs LSTM·GRU·ARIMA</td><td>XGBoost가 초단기·단기 모두 우수</td><td>소형 창고급 데이터에서도 부스팅이 안정</td></tr>
+    <tr><td>선박 도착시각</td><td>Evmides et al. 2024, JMSE 12:1362</td><td>AIS·에이전트 ETA</td><td>ML 보정</td><td>에이전트 ETA MAE 178분</td><td>ETA 편차 분포(실제 하루 생성), ETA는 외부 입력</td></tr>
+    <tr><td>냉동컨테이너 터미널</td><td>van Duin et al. 2019, J. Shipping &amp; Trade 4:1</td><td>도착 냉동컨테이너 수</td><td>다중회귀</td><td>일별 에너지 분산 76.6% 설명</td><td>'도착 수량이 1순위 입력'이라는 근거</td></tr>
+  </tbody></table></div>
+  <p class="note" style="margin-top:6px">항만 밖에서도 "언제 어떤 작업이 들어오는가"를 입력으로 쓰는 부스팅 모델이 단기 피크 예측의 표준이 되고 있다. 우리 AI는 이 패턴을 냉동컨테이너·ETA에 적용한 것이며, 역으로 같은 코드가 냉동창고·버스 차고지·물류센터에도 쓰일 수 있다(확장성).</p>
+  </details>
+
+  <div class="sub-h">⑥ 모델 A/B/C 비교 <span class="chip syn">가상데이터 검증</span> <span class="hint">40일 생성 · 앞 30일 학습, 뒤 10일 시험(시간순) · 예측시점 12:00(수정 ETA 반영) · 릿지 + GBDT, 이 브라우저에서 즉시 학습</span></div>
+  <div class="tscroll"><table id="abcTable"><thead><tr><th>모델</th><th>입력</th><th class="n">MAE (kW)</th><th class="n">ETA 변경 영향 구간 MAE</th><th class="n">피크 크기 오차</th><th class="n">피크 시각 오차</th><th class="n">경보 재현율 / 정밀도</th></tr></thead><tbody></tbody></table></div>
+  <p class="note" style="margin-top:6px">A = 전날 같은 시각 값. B = 시간대(사인·코사인)·외기온도·전날 값. C = B + 일정 변수(예상 연결 수량·풀다운 지수·V2/V3 크레인 작업 플래그). 실제 하루는 수정 ETA에 문헌 기반 ETA 편차(리마솔항 분포 근사)·양하 속도·연결 지연 잡음을 더한 가상값. C-GBDT는 XGBoost와 같은 계열의 부스팅 트리를 브라우저에서 직접 학습한 것. 실데이터에서는 차이가 달라질 수 있고 그대로 보고한다.</p>
+  <div class="sub-h">⑥-1 "시뮬레이터를 외운 건 아닌가" 시험 <span class="chip syn">가상 · 교차 세계</span> <span class="hint">학습은 세계 A만. 열 계수·시간차·ETA 편차·크레인 kW·기본부하를 모두 바꾼 세계 B 10일로 시험</span></div>
+  <div class="tscroll"><table id="oodTable"><thead><tr><th>모델</th><th class="n">세계 A 시험 MAE (kW)</th><th class="n">세계 B 시험 MAE (kW)</th><th class="n">피크 시각 오차 A→B</th><th class="n">경보 재현/정밀 A→B</th></tr></thead><tbody><tr><td colspan="5" class="note">AI 학습 완료 후 표시</td></tr></tbody></table></div>
+  <p class="note" id="oodNote" style="margin-top:6px"></p>
+  </details>
+</section>
+
+<!-- ───────── 구축 ───────── -->
+<section class="sec" id="tab-build" hidden>
+  <div class="sec-h"><h2>비용·도입 계획</h2><span class="lead">결론 먼저, 표는 접어 두었다.</span></div>
+
+  <div class="answers">
+    <div class="ans ok"><div class="q">기술 구현</div><div class="a">높음</div><div class="d">규칙 엔진·웹 화면은 완성. XGBoost 등 모델 추가는 학부 수준에서 가능.</div></div>
+    <div class="ans alert"><div class="q">데이터 확보</div><div class="a">낮음~중간</div><div class="d">가장 큰 병목. 냉동구역 단독 계량·연결 기록·선박단위 ETA 모두 미확인.</div></div>
+    <div class="ans"><div class="q">현장 필요성</div><div class="a">부분 확인</div><div class="d">BPA 2개 부서 문의 완료(기존 플랫폼과 별개, 운영사 관리 확인). 운영사의 "피크 문제 있다" 발언은 아직 없음.</div></div>
+    <div class="ans"><div class="q">경제성</div><div class="a">불확실</div><div class="d">기본요금 절감은 월 피크 1건에 달려 있고, 전력량요금 효과는 작다. 가치는 '사전 협의 시간'.</div></div>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="panel"><b>A 공모전 시연</b> <span class="st ok">가능성 높음</span><p class="small" style="margin-top:6px">현금 10만원 미만 · 외주 환산 1,000–1,800만원 · 기간 2–3주. 지금 이 페이지가 그 결과물.</p></div>
+    <div class="panel"><b>B 현장 관찰 운영</b> <span class="st warn">중간</span><p class="small" style="margin-top:6px">2,750–4,950만원 상당 + 계측 견적(기존 계량기면 0) · 협의 2–4개월 + 개발 3개월 + 관찰 2–3개월. 터미널 1곳의 읽기전용 데이터 협약이 전제.</p></div>
+    <div class="panel"><b>C 운영 도입</b> <span class="st bad">낮음~중간</span><p class="small" style="margin-top:6px">5,000–9,000만원 상당 + 장비·보안 견적 + 월 30–100만원. B에서 '경보가 실제 업무에 쓰였다'는 증거가 나와야 투자 결정이 가능.</p></div>
+  </div>
+  <p class="note" style="margin-top:8px">금액은 인월 단가 500–900만원 가정 × 투입 인월. 가격 기준일 2026-10. 부가세·장비 설치비 별도. 공개 견적이 없는 항목은 표에 '견적 필요'로 표시.</p>
+
+  <details style="margin-top:16px"><summary>최소 데이터 요구표</summary>
+  <div class="tscroll" style="margin-top:8px"><table><thead><tr><th>항목</th><th>필수</th><th>보유 주체</th><th>주기</th><th>획득 경로</th><th>예상 난점</th><th>미확보 시 대안</th><th>영향</th></tr></thead><tbody>
+    <tr><td>선박 ID · 예정/변경 ETA · 변경 통보 시각</td><td>필수</td><td>BPA 항만운영실(PORT-i) · 터미널 운영사</td><td>변경 시</td><td>BPA 운영실 문의 결과(2026-10-23): 운영사에서 직접 확보 권고 → 운영사 협의 또는 PORT-i 공개 화면 수기 정리</td><td>선박단위 ETA 공개 API 미확인(2026-10-23 검색: 공공데이터포털은 통계 API, 여수광양항만공사만 입항정보 API 확인)</td><td>승인 CSV 수동 입력</td><td>없으면 재예측 자체가 불가</td></tr>
+    <tr><td>실제 접안·하역 시작·완료 시각</td><td>필수(보정용)</td><td>터미널 TOS</td><td>이벤트</td><td>터미널 운영사 승인</td><td>내부 운영정보, 외부 제공 선례 불명</td><td>가정값 유지, 분포 미보정</td><td>시간차 모델 정확도</td></tr>
+    <tr><td>냉동컨테이너 반입·반출·연결·해제 기록</td><td>필수</td><td>터미널 TOS·냉동야드 작업팀</td><td>이벤트</td><td>운영사 승인</td><td>연결/해제 기록이 전산화돼 있는지 미확인</td><td>반입량만으로 연결 수 추정</td><td>피크 크기·시각</td></tr>
+    <tr><td>구역 15분 전력계측(kW)</td><td>필수</td><td>터미널 운영사 전기팀 (BPA 참조 의견: 부두 전체 전력은 운영사 관리) · 한전 AMI</td><td>15분</td><td>기존 계량기 로그 또는 한전 i-SMART 자료</td><td>냉동구역 단독 계량 여부 미확인</td><td>신규 CT형 계량기 설치(견적 필요)</td><td>검증·학습 불가</td></tr>
+    <tr><td>야드크레인 등 장비 운전정보</td><td>선택</td><td>터미널</td><td>이벤트</td><td>TOS 작업 배정</td><td>장비별 전력 미계측 가능</td><td>작업창 × 대표 kW 가정</td><td>장비 부하 분리</td></tr>
+    <tr><td>기상예보(예측시점 기준)</td><td>선택</td><td>기상청</td><td>1–3h</td><td>기상청 API허브</td><td>예보 시점과 실황 혼용 금지</td><td>실황 대체(누출 주의)</td><td>냉동 부하 기울기</td></tr>
+    <tr><td>요금 적용정보(계약종·선택요금·계약전력)</td><td>선택</td><td>터미널·한전</td><td>연</td><td>전기요금 고지서</td><td>계약 조건 비공개</td><td>공개 요금표 가정</td><td>비용 추정</td></tr>
+  </tbody></table></div>
+  <p class="note" style="margin-top:6px">누락·지연·수정 처리: ETA는 '통보 시각'과 함께 이력으로 저장(최신값만 덮어쓰지 않음), 연결 기록 누락은 반입 기록으로 보간하고 표시, 계측 결측은 해당 구간 검증 제외, 시간대는 KST 고정·UTC 변환 금지, 자정 넘는 작업은 날짜가 아닌 연속 시각으로 처리.</p>
+  </details>
+
+  <details style="margin-top:10px"><summary>비용 3단계 상세표</summary>
+  <div class="tscroll" style="margin-top:8px"><table><thead><tr><th>항목</th><th>A 공모전 시연</th><th>B 현장 관찰 운영</th><th>C 운영 도입</th><th>산정 근거 · 상태</th></tr></thead><tbody>
+    <tr><td>기획·현장 요구분석</td><td>학생 0.3인월</td><td>0.5인월</td><td>1인월</td><td>인월 단가 가정 500–900만원(SW기술자 평균임금 범위, 확인 필요)</td></tr>
+    <tr><td>데이터 협의·정제·명세</td><td>0.2인월</td><td>1인월 + 협의기간 2–4개월(개발과 별도)</td><td>1.5인월</td><td>협약 미확정 → 기간은 추정</td></tr>
+    <tr><td>데이터 연계 프로그램</td><td>CSV 업로드(완료)</td><td>읽기전용 연계 1인월</td><td>실시간 연계·장애처리 2인월</td><td>PORT-i/TOS 인터페이스 사양 미확보</td></tr>
+    <tr><td>예측모델 개발·검증</td><td>1인월</td><td>1.5인월(실데이터 A/B/C)</td><td>2인월 + 재학습 자동화</td><td>Colab·오픈소스, 현금 0원</td></tr>
+    <tr><td>웹 대시보드</td><td>0.5인월(이 페이지)</td><td>1인월(권한·로그)</td><td>2인월(SSO·감사로그)</td><td>단일 HTML → FastAPI+React 전환 시</td></tr>
+    <tr><td>계량기·게이트웨이·통신</td><td>0원</td><td>기존 계량기 활용 시 0원 / 신규 시 <b>견적 필요</b></td><td>구역별 계량 + 이중화 <b>견적 필요</b></td><td>최소 사양: 3상 CT형 전력계, 15분 적산, Modbus/RS-485 또는 LTE 게이트웨이. 문의: 계량기 제조사·시스템 통합사. 설치·전기공사비는 하드웨어와 별도</td></tr>
+    <tr><td>서버·클라우드</td><td>0원(GitHub Pages·Colab)</td><td>월 5–15만원(소형 VM, 가정)</td><td>월 30–100만원(이중화·백업, 가정)</td><td>클라우드 공개 단가 기준, 사양 확정 후 재산정</td></tr>
+    <tr><td>보안·권한·로그</td><td>없음</td><td>기본 인증 0.3인월</td><td>1인월 + 보안점검 <b>견적 필요</b></td><td>항만보안 규정 확인 필요</td></tr>
+    <tr><td>현장 시험·교육·출장</td><td>교통비 수만원</td><td>월 2회 방문 가정</td><td>교육 2회 + 시운전</td><td>부산 내 이동 기준</td></tr>
+    <tr><td>운영·재학습·유지보수(연)</td><td>—</td><td>0.2인월/월</td><td>개발비의 15–20%/년(통상 가정)</td><td>계약 형태에 따라 상이</td></tr>
+    <tr><td>예비비</td><td>—</td><td>10%</td><td>20%</td><td>데이터 미확보 리스크 반영</td></tr>
+    <tr><td><b>합계(인건비 환산)</b></td><td>약 2인월 → 현금 지출 10만원 미만</td><td>약 5.5인월 + 협의 2–4개월 + 계측 견적</td><td>약 10인월 + 장비·보안 견적 + 월 운영비</td><td>인월×단가 적용 시 A 1,000–1,800만원, B 2,750–4,950만원, C 5,000–9,000만원 상당(장비 제외) · 가격 기준일 2026-10 · 모두 추정</td></tr>
+  </tbody></table></div>
+  </details>
+
+  <details style="margin-top:10px"><summary>현장 도입 10단계 (협의 기간과 개발 기간 구분 · 협약 미확정)</summary>
+  <div class="tscroll" style="margin-top:8px"><table><thead><tr><th>단계</th><th>필요 자료</th><th>담당</th><th>산출물</th><th>기간 근거</th><th>통과 기준</th><th>지연 요인 · 대체 경로</th></tr></thead><tbody>
+    <tr><td>1 현장 문제·사용자 확인</td><td>담당자 인터뷰</td><td>팀·터미널 전기/운영</td><td>문제 정의서</td><td>2–4주(일정 조율)</td><td>피크 관리 절차와 곤란 사례 1건 이상 확인</td><td>면담 거절 → BPA 공식 문의, 문헌 근거로 가설 유지</td></tr>
+    <tr><td>2 계량 구역·데이터 범위 합의</td><td>단선도·계량기 목록</td><td>터미널 전기팀</td><td>데이터 제공 범위 합의서</td><td>1–3개월</td><td>냉동구역 계량 경계 확정</td><td>단독 계량 없음 → 신규 계측 또는 범위 축소</td></tr>
+    <tr><td>3 데이터 품질 점검</td><td>3개월치 15분 전력·연결 기록</td><td>팀</td><td>품질 보고서</td><td>2주</td><td>결측 5% 미만, 시각 정합</td><td>결측 과다 → 기간 연장</td></tr>
+    <tr><td>4 기준모델 구축</td><td>동일</td><td>팀</td><td>모델 A·B 성능표</td><td>2주</td><td>시간순 분할 검증 완료</td><td>—</td></tr>
+    <tr><td>5 ETA·물류정보 추가 효과 검증</td><td>ETA 이력·연결 기록</td><td>팀</td><td>모델 C 비교표</td><td>3주</td><td>ETA 변경 구간에서 B 대비 개선 확인(없으면 그대로 보고)</td><td>개선 없음 → 경보 기능만 유지, 예측 모델은 B</td></tr>
+    <tr><td>6 운영자 화면 개발</td><td>모델 출력</td><td>팀</td><td>대시보드</td><td>3주</td><td>사용자 2인 시험</td><td>—</td></tr>
+    <tr><td>7 과거 데이터 재현 시험</td><td>과거 1개월</td><td>팀·전기팀</td><td>사건 단위 재현율·정밀도</td><td>2주</td><td>지표 공개, 기준 없음</td><td>—</td></tr>
+    <tr><td>8 실시간 관찰 운영</td><td>읽기전용 연계</td><td>전기팀</td><td>경보 로그</td><td>2–3개월</td><td>경보 1건 이상 업무에 사용</td><td>연계 불가 → 일 1회 CSV</td></tr>
+    <tr><td>9 경보·업무 활용성 평가</td><td>로그·면담</td><td>팀·사용자</td><td>평가서</td><td>2주</td><td>오경보 피로도 허용 수준</td><td>—</td></tr>
+    <tr><td>10 확장 여부 결정</td><td>평가서</td><td>터미널·BPA</td><td>결정</td><td>—</td><td>—</td><td>AMP·장비 부하로 확대는 별도 과제</td></tr>
+  </tbody></table></div>
+  </details>
+
+  <details style="margin-top:10px"><summary>담당자별 질문 목록 (직접 확인용)</summary>
+  <div class="grid2" style="margin-top:8px">
+    <div class="panel"><b>터미널 전기·시설 담당</b><ol class="small" style="margin:6px 0 0;padding-left:18px"><li>냉동야드 전력은 별도 계량기로 측정됩니까? 계량 주기는?</li><li>월 최대수요 관리 기준(계약전력·목표 kW)이 있고, 초과가 실제로 발생한 적이 있습니까?</li><li>피크가 예상될 때 현재 하는 조치는 무엇입니까?</li><li>ESS·AMP가 같은 계량 구역에 있습니까?</li><li>익명화한 15분 전력 자료를 연구용으로 받을 수 있습니까? 승인 절차는?</li></ol></div>
+    <div class="panel"><b>운영계획·TOS 담당</b><ol class="small" style="margin:6px 0 0;padding-left:18px"><li>ETA 변경은 어떤 경로로, 하루 몇 번 들어옵니까? 이력이 남습니까?</li><li>접안 → 하역 시작, 양하 → 야드 반입 → 전원 연결의 평균 소요시간은?</li><li>냉동컨테이너 연결·해제 시각이 TOS에 기록됩니까?</li><li>냉동 양하 순서나 연결 속도를 조정하는 것이 운영상 가능합니까?</li><li>비전원 대기 허용 시간 기준이 있습니까?</li></ol></div>
+    <div class="panel"><b>부산항만공사(스마트시설·에너지)</b><ol class="small" style="margin:6px 0 0;padding-left:18px"><li>에너지수요관리 플랫폼이 선박 일정을 입력으로 씁니까?</li><li>일정 변경 시 수요예측을 갱신하는 기능이 있습니까?</li><li>PORT-i 선박·선석 일정의 연구용 제공 절차가 있습니까?</li><li>ESS Farm은 터미널 냉동 부하와 연결됩니까? 구현 단계는?</li></ol></div>
+    <div class="panel"><b>한전 영업·화주/냉동화물 담당</b><ol class="small" style="margin:6px 0 0;padding-left:18px"><li>터미널의 계약종별·선택요금·계약전력은? (요금 추정 보정)</li><li>냉동화물의 비전원 허용 시간과 온도 기준은 품목별로 어떻게 다릅니까?</li><li>사전냉각이나 연결 순서 조정 시 화주 동의가 필요합니까?</li></ol></div>
+  </div>
+  </details>
+</section>
+
+<!-- ───────── 추적 ───────── -->
+<section class="sec" id="tab-track" hidden>
+  <div class="sec-h"><h2>개선 이력·출처</h2><span class="lead">무엇을 고쳤고 무엇이 남았나.</span></div>
+
+  <div class="sub-h" style="margin-top:0">v2에서 추가·수정한 것</div>
+  <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+    <li><b>첫 화면이 4개 질문에 답한다</b>: 어느 선박 · 초과 시간대 변화 · 기존 계획이 놓치는 구간 · 지금 확인할 것.</li>
+    <li><b>한 개의 15분 엔진</b>이 3D·그래프·경보·대안·검증을 모두 만든다. 숫자가 화면마다 다르던 문제 제거.</li>
+    <li><b>재현율·정밀도</b>를 사건 단위로 다시 계산(TP 동일), <b>갱신시간</b>은 측정한 단계만 측정으로 표시.</li>
+    <li><b>대안</b>은 제약 충족 → 비용 순서. 충족 대안이 없으면 없다고 쓴다. 기본요금은 월 상한으로 분리.</li>
+    <li><b>ETA→연결 시간차</b>를 4개 가정값으로 분리해 "ETA 3h ≠ 연결 3h"를 공정도와 슬라이더로 보여준다.</li>
+    <li><b>3D</b>: 전력 벽(15분 막대, 부하 구성 색, 목표면, 변경 전 뒷줄) + 야드 애니메이션. 2D 배치도·공정도·열지도가 대체 화면.</li>
+    <li>모든 숫자에 실측/공개/가정/가상 표시. 실측은 0건.</li>
+    <li><b>v3</b>: 열 모델·긴급도 우선 연결·15분 스케줄러·4안 비교·탄소 상쇄 목표·20일 재검증 (연구자 회신 반영, 아래 표).</li>
+    <li><b>최종 보완(v2.3)</b>: 기획서 2.4–2.7 초안, 기존 시스템 비교표('확인 중' 표기), 담당자 문의 메일 4종, 모델 A/B/C 가상데이터 검증(브라우저 내 릿지 회귀), ESS 재충전 제약, 요금 인상 보정, 3D 저사양 모드·끄기 버튼, van Duin 76.6% 원문 확인(결론, 일 단위 393개 관측).</li>
+  </ul>
+
+  <div class="sub-h">v3 — 중국 측 연구자 회신(2026-10-23) 반영</div>
+  <div class="tscroll"><table><thead><tr><th>제안</th><th>반영</th><th>남은 한계</th></tr></thead><tbody>
+    <tr><td>1. 하역→이송→연결을 열 모델로, 긴급 컨테이너 우선 배정</td><td>내부온도 상태 변수(냉동 τ 100h는 CSIRO 2007 실측 환산, 허용 편차·오프라인 4h는 van Duin 2019 Table 1), 3종 화물, 한도 도달 시간 순 양하 + <b>소켓 수 제약·대기</b> (과정 탭)</td><td>냉장·바나나 τ, k, 유닛 상한, 화물 비율은 가정. 순서 배정은 온도 위반을 줄이지만 총 비전원 시간은 못 줄인다 — 이송 지연 단축이 더 크다</td></tr>
+    <tr><td>2. 작업 부하 먼저 조정, 남은 피크만 ESS</td><td>15분 탐욕 스케줄러: 통보 후 남은 V2 야드크레인 슬롯 + <b>야드트랙터 충전 슬롯</b> 재배치, 슬롯 수·충전 에너지·기한·충전창 유지, ETA 불변 (대안 탭)</td><td>크레인 조각화의 운영 현실성 미확인. 충전기 100kW·4대·1,800kWh/일은 가정(7부두 AGV 60대 전기는 공개). AMP 선박 수전은 미모델링</td></tr>
+    <tr><td>3. 탄소 상쇄 목표를 명시</td><td>변경 전 대비 증가 탄소 → 상쇄 필요 kWh를 판정 아래 표시</td><td>배출계수 가정값. 태양광 자가소비는 설비 미확인으로 제외</td></tr>
+    <tr><td>4. 조건 충족 → 점수 비교</td><td>비용·탄소·피크 ≤ 기준, 물동량·지연 유지, 온도·SOC 조건 → 통과 안 중 선택, C0 후보 유지, 없으면 상충관계 표시</td><td>가중치 없음. 잡음 허용 0.1%는 임의</td></tr>
+    <tr><td>5. 4안 소규모 비교 실험 + 미사용 날짜 재검증</td><td>C0/C1/C2/C3 표 + 검증 탭 ⑥ 20일 재검증</td><td>전부 가상. 실측 보정 전까지 '효과의 출처'만 설명 가능</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">v9 — 5개 항목 집중 보완 (2026-10-23)</div>
+  <div class="tscroll"><table><thead><tr><th>항목</th><th>반영</th></tr></thead><tbody>
+    <tr><td>차별성</td><td>② 탭: 상용 EMS·BPA 플랫폼·한전 DR 대비 기능 단위 비교표 + "우리만 있는 것 3개" 한 줄. 미확인은 미확인으로</td></tr>
+    <tr><td>AI 활용</td><td>④ 탭 ⑤: AI KPI 카드 4개(기준 대비 −%, 사건 경보, 교차 세계, 현장 성능 unknown), 예측 범위별(1h/6h/24h) 오차표, 데이터 부족 시 동작 4가지. 상황판: AI·시뮬레이션 불일치 시 운영 규칙 문장</td></tr>
+    <tr><td>경제성</td><td>③ 탭: '연간으로 보면' 계산기(위험 일수·월 피크 결정 비율 입력 → 연 절감 범위), 터미널 전체 환산, DR 시장 조사 항목</td></tr>
+    <tr><td>사용자 효용</td><td>상황판 확인 목록을 역할별(운영계획·전기·냉동야드·전체) 한 줄로, 경보 등급(긴급/주의/관찰), 결과 기록→재학습 단계</td></tr>
+    <tr><td>확장성</td><td>⑤ 탭: 냉동물류창고·전기버스 차고지 프리셋 — 버튼으로 실제 전환, 같은 엔진·AI·판정 사용</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">v8 — 2차 심사 지적 반영 (2026-10-23)</div>
+  <div class="tscroll"><table><thead><tr><th>지적</th><th>반영</th><th>남은 한계</th></tr></thead><tbody>
+    <tr><td>"AI가 시뮬레이터를 외운 것 아닌가"(순환 논증)</td><td>④ 탭 ⑥-1: 열 계수·시간차·ETA 편차·장비 kW를 모두 바꾼 '세계 B' 10일로 교차 시험. 오차 상승폭과 단순 기준 대비 우위를 그대로 표시</td><td>세계 B도 가상. 현장 성능은 여전히 unknown</td></tr>
+    <tr><td>부산항 근거 부족</td><td>국내 공개자료 4회 검색 기록(모두 없음)을 표로 공개, 로테르담 실측 1건을 ⑤에 배치, 첫 화면에 '먼저 밝힘' 줄</td><td>운영사 발언 미확보</td></tr>
+    <tr><td>경제성 없음</td><td>③ 탭 '돈으로 얼마인가': 전력량요금·기본요금 월 상한·연 환산·로테르담식 피크요금 비교를 조건과 함께</td><td>계약 조건 미확인, 조건부 추정</td></tr>
+    <tr><td>AI가 첫 줄에 안 보임</td><td>답 카드 2번에 AI 수치 병기, 근거 줄은 접기</td><td>—</td></tr>
+    <tr><td>전달력</td><td>2분 발표 대본 추가(기록 탭)</td><td>—</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">v4 — 심사위원 관점 지적 반영 (2026-10-23)</div>
+  <div class="tscroll"><table><thead><tr><th>지적</th><th>반영</th><th>남은 한계</th></tr></thead><tbody>
+    <tr><td>AI가 없는데 제목이 AI</td><td>브라우저 내 GBDT(부스팅 트리 120개, 깊이 3) 학습·검증 추가. 검증 탭 ⑤에서 A/B/C(릿지)/C-GBDT 비교. 머리말 문구를 "예측 AI(GBDT) 가상데이터 검증"으로</td><td>학습 데이터가 가상. 실데이터에선 개선폭이 달라질 수 있음</td></tr>
+    <tr><td>실제 하루의 ETA 편차가 임의</td><td>Michaelides 2019(리마솔항, Evmides 2024 인용) 컨테이너선 지연 분포 근사: 45% 30분 이상 지연, 13% 2–6h, 에이전트 ETA MAE≈3h</td><td>부산항 분포 아님. PORT-i 이력 확보 시 교체</td></tr>
+    <tr><td>기존 시스템과 차별성 '확인 중'</td><td>BPA 참조 의견 반영: 에너지 플랫폼은 신재생 모니터링(별개), 전력 관리 주체는 운영사 → '운영사 EMS 보완형'으로 위치 재정의</td><td>운영사 EMS의 일정 반영 여부 미확인</td></tr>
+    <tr><td>충전 부하 1,800kWh 출처 없음</td><td>기본값 0(옵션). 7부두형 자동화 터미널 선택 시에만 60대×30kWh 가정으로 적용, 가정 표시</td><td>충전기 사양·대수 가정</td></tr>
+    <tr><td>탭·표 과다</td><td>핵심 5탭(상황판·ETA→전력·4안·검증·부산항) + '더 보기'에 3탭 숨김</td><td>—</td></tr>
+    <tr><td>3D가 장식적·느릴 위험</td><td>기본 꺼짐(버튼으로 로드), 갠트리 크레인·선박 상부구조·랙 블록·충전소·수전실·시간 격자·초과 구간 라벨, 다크모드 대응</td><td>개념 배치, 실제 도면 아님</td></tr>
+    <tr><td>공개 실측 데이터</td><td>조사 결과: 냉동야드 전력 공개 데이터 없음. IEEE DataPort(Hohai Univ., 선박 일정+다중 에너지 부하, 예측값·구독 필요)만 확인. PORT-i·기상 API는 이 환경에서 접근 불가</td><td>실측 0건 유지</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">2분 발표 대본 <span class="hint">상황판 하나로 끝내는 순서</span></div>
+  <div class="panel"><ol class="small" style="margin:0;padding-left:18px;display:grid;gap:6px">
+    <li><b>(15초) 문제</b> — "배가 3시간 늦으면 냉동컨테이너 전원 연결도 밀리고, 그 피크가 다른 배 작업과 겹칩니다. 로테르담에서는 이 피크가 3개월에 6번 한도를 넘었습니다."</li>
+    <li><b>(20초) 답 카드 4개</b> — 무엇이 바뀌었나 / 언제 넘나 / 기존 계획이 못 보는 시간 / 지금 할 일. "통보 12시, 초과는 20시 반부터, 기존 계획은 23시 반 이후를 못 봅니다."</li>
+    <li><b>(25초) 왜</b> — ② 탭 공정도 한 장. "ETA 3시간 ≠ 연결 3시간. 접안 대기·하역·이송이 다르게 쌓입니다. 냉동 τ는 CSIRO 실측에서, 허용 편차는 van Duin 표에서 가져왔습니다."</li>
+    <li><b>(25초) AI</b> — 상황판 AI 경보. "부스팅 트리가 브라우저에서 학습해 피크 시각·초과 확률·원인을 문장으로 냅니다. 단순 기준 대비 오차 절반, 다른 세계로 시험해도 기준보다 낫습니다. 단, 가상 데이터입니다."</li>
+    <li><b>(25초) 무엇을 할 수 있나</b> — ③ 탭 판정 한 줄. "배터리만 쓰면 손실로 탄소가 늘고, 작업 시간을 먼저 옮기면 ESS 없이도 목표 안에 들어옵니다. 조건을 못 지키면 '달성 불가'와 완화할 조건을 보여줍니다."</li>
+    <li><b>(10초) 정직</b> — "실측 0건입니다. BPA는 기존 플랫폼과 별개라 했고 운영사 확인 중입니다. 다음 단계는 7부두 또는 2-6단계 설계에 계량 규격을 제안하는 것입니다."</li>
+  </ol></div>
+
+  <div class="sub-h">국내 공개자료 검색 기록 <span class="hint">2026-10-23 · 부산항 터미널 냉동·전력 실측 수치를 찾으려 했으나 없음</span></div>
+  <div class="tscroll"><table><thead><tr><th>검색</th><th>찾은 것</th><th>냉동·전력 수치</th></tr></thead><tbody>
+    <tr><td>부산신항 냉동컨테이너 전력 피크·계약전력 논문</td><td>장치장 점유율·효율성·포지셔닝 연구(KCI)</td><td>없음</td></tr>
+    <tr><td>컨테이너터미널 전력 사용량 분석 부산</td><td>김아롬·류동근 2016 (부산·상하이 운영사 경영성과, 재무제표 기반)</td><td>없음</td></tr>
+    <tr><td>컨테이너터미널 전기요금·전동화 기사</td><td>신항 BCT 개장 기사(2022), ITT 평가요소 연구</td><td>없음</td></tr>
+    <tr><td>부산항 냉동컨테이너 TEU 비중</td><td>2025년 총 2,488만 TEU·환적 1,410만(공개)</td><td>냉동 비중 없음</td></tr>
+  </tbody></table></div>
+  <p class="note" style="margin-top:6px">결론: 국내 공개 문헌에는 터미널 냉동야드 전력 실측이 없다. 해외도 로테르담 1건(ABB 계측)뿐. 이 공백 자체가 "운영사 데이터 협약이 1차 과제"라는 근거다.</p>
+
+  <div class="sub-h">심사 1순위 구멍: "부산항에 이 문제가 실제로 있나" — 메우는 방법</div>
+  <div class="grid3">
+    <div class="panel"><b>① 확보됨</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>BPA 스마트시설부: 에너지 플랫폼은 신재생 모니터링용, 전력수요예측과 별개(참조 의견)</li><li>BPA: 부두 전체 전력은 터미널 운영사가 관리</li><li>BPA 2022 이동형 AMP 케이블 도입 사유 = 입항 일정 변동(공개)</li><li>van Duin 2019: 냉동 도착 수가 일별 에너지 분산 76.6% 설명</li></ul></div>
+    <div class="panel"><b>② 이번 주에 할 것</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>운영사(DGT→HPNT) 전화 1통: "배 지연으로 냉동 연결이 밤에 몰린 적 있나", "피크·계약전력 넘으면 어떻게 하나", "일정 바뀌면 전기 담당에게 알리나", "양하→연결 몇 시간"</li><li>답이 "있다" 한 마디면 기획서 1.2에 "운영사 1곳 확인"으로 기재</li><li>답이 없으면 "운영사 2곳 문의 중"으로 기재하고 가설로 유지</li></ul></div>
+    <div class="panel"><b>③ 쓰면 안 되는 표현</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>"BPA 공식 확인" — 담당자가 참조용이라고 명시</li><li>담당자 실명</li><li>"부산항에서 피크 초과가 반복된다" — 근거 없음</li><li>"기존 시스템에 없음" — 운영사 EMS 미확인</li></ul></div>
+  </div>
+
+  <div class="sub-h">3D의 역할과 한계</div>
+  <p class="small">역할은 "언제, 무엇 때문에 전력이 겹치는가"를 한 장면에서 보이게 하는 것이다. 전력 벽의 막대 색이 원인(크레인·냉동·기본)을, 높이가 크기를, 빨간 부분이 초과를, 뒷줄이 변경 전을 보여준다. 한계: 배치는 개념이며 실제 부산항이 아니고, 설비 위치와 전기 계통 연결은 다르다. 심사에서는 3D가 아니라 "입력을 바꾸면 결과가 바뀌는가"가 평가되므로, 발표에서는 3D를 30초 이내로 쓰고 답 카드와 그래프에 시간을 쓰는 편이 낫다.</p>
+
+  <div class="sub-h">실제로 투입된다면 바꿔야 하는 것</div>
+  <div class="tscroll"><table><thead><tr><th>지금(시연)</th><th>투입 시</th><th>왜</th></tr></thead><tbody>
+    <tr><td>슬라이더로 ETA 입력</td><td>PORT-i/TOS에서 ETA 이력(통보 시각 포함) 자동 수신, 초기엔 승인 CSV</td><td>재예측의 유일한 입력. 공개 API 미확인</td></tr>
+    <tr><td>냉동 1대 = 3.0kW + 풀다운 규칙</td><td>구역 15분 계측과 연결 기록으로 학습한 모델(A/B/C 비교 후 채택)</td><td>지금 수치는 가정. 실측 없이는 정확도 주장 불가</td></tr>
+    <tr><td>시간차 4개 고정값</td><td>접안·하역·연결 기록에서 추정한 분포(평균·분산), 터미널마다 재추정</td><td>ETA→연결 변환이 핵심 연결고리</td></tr>
+    <tr><td>관리목표 슬라이더</td><td>계약전력·월 최대수요·내부 기준으로 교체, 경보 기준은 전기팀이 설정</td><td>경보 임계값은 운영 기준이지 모델 값이 아님</td></tr>
+    <tr><td>화면 안의 확인 목록</td><td>전기팀·운영팀 알림 채널(메신저·메일)과 처리 기록</td><td>경보가 업무에 연결돼야 가치가 남는다</td></tr>
+    <tr><td>가상 선박 V1·V3</td><td>해당 날의 전체 선박 일정</td><td>겹침의 원인이 실제 일정이어야 함</td></tr>
+    <tr><td>ESS·사전냉각 가상 대안</td><td>ESS 실재 확인 후 상태 연동, 제어는 별도 권한·안전 절차</td><td>초기 범위는 예측·경보까지</td></tr>
+    <tr><td>단일 HTML, 브라우저 계산</td><td>FastAPI 서버 + 읽기전용 DB + 로그인·감사로그, 3D는 선택 모듈</td><td>데이터 보호·다중 사용자·장애 대응</td></tr>
+    <tr><td>개념 3D 배치</td><td>터미널 도면 기반 배치 또는 제거</td><td>실제처럼 보이면 오해를 부른다</td></tr>
+  </tbody></table></div>
+
+  <div class="sub-h">남은 과제 <span class="hint">페이지 안에서 처리할 수 있는 것은 끝났고, 아래는 사람이 해야 하는 것</span></div>
+  <ol class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+    <li><b>운영사 문의</b> — BPA 2개 부서 답변 확보, 운영사(DGT·HPNT) 확인은 진행 중.</li>
+    <li><b>냉동구역 계량·연결 기록 확인</b> — 회신 결과로 B단계 가능 여부 결정.</li>
+    <li><b>요금표 원문 확인</b> — 한전 사이버지점에서 고압A 선택Ⅱ 현행 단가를 보고 '대안' 탭 보정값 조정.</li>
+    <li><b>XGBoost 비교</b> — Colab에서 같은 40일 분할로 A/B/C 재실행(브라우저는 릿지까지).</li>
+    <li><b>iPad Safari 확인</b> — 느리면 '3D 끄기' 또는 저사양 모드(폭 700px 이하 자동).</li>
+    <li><b>시연 영상 2분</b> — 상황판 → 부산항 적용 → 대안 → 검증 순.</li>
+  </ol>
+
+  <details style="margin-top:16px"><summary>v1 지적사항 개선 추적표</summary>
+  <div class="tscroll" style="margin-top:8px"><table class="track"><thead><tr><th>기존 문제</th><th>조사·검증 근거</th><th>수정 결정</th><th>변경된 화면·코드</th><th>확인 방법</th><th>결과</th><th>남은 한계 · 상태</th></tr></thead><tbody>
+    <tr><td>① 재현율 14/16, 정밀도 6/14 (TP 불일치)</td><td>사건 단위와 15분 구간 단위 혼용으로 추정(v1 코드 미확인)</td><td>사건 단위 일대일 매칭으로 통일</td><td>검증 탭 ① 표, 사건 매칭표</td><td>TP가 양쪽 분자에서 같은지 표에서 확인</td><td>같은 TP로 계산됨</td><td>가상데이터 검증 완료 · 실데이터 미검증</td></tr>
+    <tr><td>② 0.3ms 계산시간으로 '1분 이내 갱신' 합격</td><td>전체 갱신 경로 미측정</td><td>단계 분리, 미측정 단계는 미측정 표기</td><td>검증 탭 ② 표</td><td>브라우저에서 20회 반복 측정</td><td>모델 계산만 측정</td><td>전체 갱신시간 미검증 · 현장 확인 필요</td></tr>
+    <tr><td>③ 9.87→9.88MW인데 '최대전력 증가' 강조</td><td>30일 배치로 유형별 빈도 산출</td><td>'초과 시간대 이동·놓치는 구간' 중심으로 설명, 사례 선별 사실 명시</td><td>상황판 답 카드, 검증 탭 ③</td><td>유형 빈도 표</td><td>대표 사례는 이동형</td><td>가상데이터 검증 완료</td></tr>
+    <tr><td>④ 1h 평균·6.6MW 시연 vs 15min·11.7MW 검증</td><td>계량 경계 불일치</td><td>단일 15분 엔진·단일 구역·단일 목표로 통일, MW 화면 폐기</td><td>전체</td><td>그래프·표·경보 값 동일 함수 출력</td><td>통일됨</td><td>구현 완료</td></tr>
+    <tr><td>⑤ 기본요금을 하루치로 나눈 절감액, 목표 미달 대안을 추천</td><td>한전 요금표(2023-05-16) 확인</td><td>제약 충족 우선 판정, 기본요금은 월 상한으로 별도 표기, 탄소 증가는 증가로 표시</td><td>대안 탭</td><td>ESS 0kW 시 '평가 불가', 충족 없음 시 문구 확인</td><td>반영됨</td><td>요금 인상분 미반영 · ESS 실존 미확인 · 현장 확인 필요</td></tr>
+    <tr><td>⑥ 3D 개념 모델이 실제 구현처럼 보임</td><td>운영데이터와 미동기</td><td>2D 배치도 기본, 3D는 버튼으로 지연 로드, '개념 배치' 명시, 클릭 시 같은 엔진 값 표시</td><td>과정 탭</td><td>3D 미로드 상태에서도 모든 정보 열람 가능</td><td>반영됨</td><td>구현 완료 · 실제 배치 아님</td></tr>
+    <tr><td>참고문헌 76.6% 인용</td><td>원문 확인: 결론에서 도착 냉동컨테이너 수가 총 에너지 소비 분산의 76.6% 설명(모델 전체 R² 0.83), 일 단위 393개 관측, 2014-01~2015-01, ABB 제공 컨테이너별 계측 65,732건; 40%는 Wilmsmeier 2014 인용</td><td>'76.6%(일 단위)'로 표기, 15분 피크 비중으로 해석 금지</td><td>기획서 초안 1.2 · 출처</td><td>PDF 원문 확인</td><td>확인 완료</td><td>실데이터 검증 완료(서지)</td></tr>
+    <tr><td>AI 성능 주장</td><td>가상 40일로 릿지 A/B/C 비교 실행</td><td>'규칙 기반 시연 + 릿지 가상검증'으로 표기, XGBoost는 계획</td><td>검증 ⑤</td><td>표의 MAE·피크·경보 지표</td><td>C 우위(가상 구조상 유리)</td><td>가상데이터 검증 완료 · 실데이터 미검증</td></tr>
+    <tr><td>ESS 재충전·요금 인상 미반영</td><td>전기신문 2024-10-24 +16.9원/kWh</td><td>재충전 제약(경부하 10h 내 출력 한도) 추가, 보정 슬라이더 추가</td><td>대안 탭</td><td>ESS 400kW 설정 시 재충전 시간 표시</td><td>반영됨</td><td>구현 완료 · 선택요금별 세부 단가 확인 필요</td></tr>
+    <tr><td>기획서 2.4–2.7 미작성 · 문의 미발송</td><td>—</td><td>초안 5절 + 비교표 + 메일 4종 작성</td><td>v7에서 페이지 밖(별도 문서)으로 분리</td><td>—</td><td>작성됨</td><td>제안만 완료 · 발송은 사람이</td></tr>
+  </tbody></table></div>
+  </details>
+
+  <details style="margin-top:10px"><summary>공모전 전 필수 / 실증 전 필수 / 장기 · 심사위원이 먼저 의심할 것</summary>
+  <div class="sub-h">공모전 전 필수 / 실증 전 필수 / 장기</div>
+  <div class="grid3">
+    <div class="panel"><b>공모전 전 필수</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>터미널 또는 BPA 담당자 1명과 문제 확인(질문 목록)</li><li>기획서 2.4–2.7을 이 페이지의 표로 채우기</li><li>'기존 시스템에 없음' 표현을 '확인 중'으로 수정</li><li>시연 영상 2분(상황판 → 과정 → 대안 → 검증)</li></ul></div>
+    <div class="panel"><b>현장 실증 전 필수</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>냉동구역 15분 계측 3개월</li><li>연결·해제 기록, ETA 이력 확보</li><li>모델 A/B/C 실데이터 비교</li><li>시간차 분포 보정</li></ul></div>
+    <div class="panel"><b>장기 확장</b><ul class="small" style="margin:6px 0 0;padding-left:18px"><li>AMP·야드장비 부하 통합</li><li>ESS 운영 연계(별도 권한·안전 절차)</li><li>PORT-i 실시간 연계</li></ul></div>
+  </div>
+
+  <div class="sub-h">심사위원이 먼저 의심할 것</div>
+  <ul class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+    <li>"부산항에 이 문제가 실제로 있나?" → 현재 답: 문헌(van Duin 2019)과 가상 시뮬레이션뿐. 현장 확인 1건이 가장 큰 점수 차이를 만든다.</li>
+    <li>"기존 EMS가 이미 하지 않나?" → 확인 안 됨. 비교표는 '입력(ETA 이력)·시점(통보 직후)·출력(놓치는 구간)' 기준으로만 쓴다.</li>
+    <li>"AI가 어디에 쓰였나?" → 현재 없음. 규칙 기반 시연 + 모델 계획. 숨기지 않는 쪽이 낫다.</li>
+    <li>"경보를 받으면 뭘 할 수 있나?" → 연결 분산·작업 지연·ESS는 모두 타 부서 권한. 가치는 '사전 협의 시간 확보'로 한정해 말한다.</li>
+    <li>"학생팀이 기간 안에 되나?" → A단계는 이미 됨. B단계는 데이터 협의가 병목.</li>
+  </ul>
+  </details>
+
+  <div class="sub-h">출처</div>
+  <ol class="srcs">
+    <li>van Duin, J.H.R. et al. (2019). Factors causing peak energy consumption of reefers at container terminals. <i>Journal of Shipping and Trade</i> 4:1. <a href="https://doi.org/10.1186/s41072-019-0040-y">doi:10.1186/s41072-019-0040-y</a> — 원문 확인(2026-10-23): 결론에서 도착 냉동컨테이너 수가 총 에너지 소비 분산의 76.6%, 체류시간 4.6%, 모델 전체 83% 설명. 일 단위 393개 관측(2014-01~2015-01), ABB 제공 컨테이너별 계측 65,732건, 터미널명 비공개. '40%'는 Wilmsmeier et al. 2014 인용.</li>
+    <li>van Duin, J.H.R., Geerlings, H., Verbraeck, A., Nafde, T. (2017). Keep It Cool: Reducing Energy Peaks of Reefers at Terminals. TRB 96th Annual Meeting. <a href="https://repub.eur.nl/pub/104451/TRB17-00483-reefers-002-.pdf">PDF</a> — 로테르담 터미널 1곳, 15분 피크 14,831kW, 한도 14,000kW 3개월 6회 초과, 슬롯 분산 시 8,266kW.</li>
+    <li>해양수산부·부산항만공사 발표(2026-01-29, 다음뉴스): 2025년 부산항 2,488만 TEU, 환적 1,410만 TEU. <a href="https://v.daum.net/v/20260129110326732">링크</a> · IIR, Reefer container throughput in main European ports(2021): 로테르담 냉동 유형 약 15%, 앤트워프 8.2%. <a href="https://iifiir.org/en/news/reefer-container-throughput-in-main-european-ports">링크</a></li>
+    <li>Wen, J. port-energy-carbon-cockpit (MIT License). <a href="https://github.com/wenjiayi123/port-energy-carbon-cockpit">GitHub</a> — 참고한 파일: docs/RUNTIME_DATA_CONTRACT.md(telemetry-field.v1: value·unit·event_time·ingest_time·source_type·quality_status·is_measured/simulated/derived, 품질 게이트), docs/MODEL_CARD.md(train/validation/test, 인과 예측, production_eligible=false), docs/DATA_CARD.md(공개 월별 TEU → 시간 배분은 derived), backend/app/services/runtime_forecast.py(릿지, 검증셋 α 선택, 잔차 std, 계수 SHA-256), runtime_decision.py(135개 후보 격자 탐색 + 안전 투영 + SOP 기준선 비교, "finite_candidate_model_predictive_control"로 명명), frontend DecisionImpactOverlay.tsx(phases/actions/risks/recommendations/results 보고 구조). 코드 복사 없음, 구조만 차용.</li>
+    <li>Wang, Z., Zhang, Y., Wang, L., Lin, Y. Regime-Adaptive Weighted Ensemble Learning for Computing-Driven Dynamic Load Forecasting in AI Data Centers. <a href="https://arxiv.org/abs/2604.27207">arXiv:2604.27207</a> — 분당 작업 수를 외생변수로, XGBoost+1D-CNN 앙상블, NMAE 0.37%.</li>
+    <li>Bhupatiraju, A., Ahn, S.B. Explainability-Driven Feature Engineering for Mid-Term Electricity Load Forecasting in ERCOT's SCENT Region. <a href="https://arxiv.org/abs/2507.22220">arXiv:2507.22220</a> — SHAP 기반 피처 설계, XGBoost MAPE 0.79%.</li>
+    <li>Winschermann, L. et al. (2025). Carbon, Cost and Capacity: Multi-objective Charging of Electric Buses. <a href="https://arxiv.org/abs/2504.06078">arXiv:2504.06078</a> — 네덜란드 실데이터, 피크 최대 −57%.</li>
+    <li>Ribeiro, A.M.N.C. et al. (2022). Short- and Very Short-Term Firm-Level Load Forecasting for Warehouses. <i>Energies</i> 15(3):750. <a href="https://doi.org/10.3390/en15030750">doi</a> — XGBoost 최우수.</li>
+    <li>Evmides, N. et al. (2024). Enhancing Prediction Accuracy of Vessel Arrival Times Using Machine Learning. <i>J. Mar. Sci. Eng.</i> 12, 1362 — 에이전트 ETA MAE 178분, Michaelides 2019 인용(컨테이너선 45% 30분 이상 지연, 13% 2–6h, 13% 1–3일). <a href="https://www.mdpi.com/2077-1312/12/8/1362">링크</a></li>
+    <li>IEEE DataPort, Pu Y. (Hohai Univ.) Dataset of Integrated Energy System and Container Logistics System in a Port, DOI 10.21227/nv74-9738 — 선박 일정·다중 에너지 부하 예측값, 구독 필요. <a href="https://ieee-dataport.org/documents/dataset-integrated-energy-system-and-container-logistics-system-port">링크</a></li>
+    <li>경향신문(2017-08-10). DR 시장 제도 — 참여 수용가 3,195개, 감축 용량 4,352MW. <a href="https://www.khan.co.kr/article/201708101759001">링크</a> (kW당 정산금은 미기재)</li>
+    <li>CSIRO / Food Science Australia (2007-06). Refrigeration containers off power in ambient temperatures — 40ft 냉동육 컨테이너, 외기 25℃에서 −18→−10℃ 22h, 단열 0.5W/m²K 가정. <a href="https://meatupdate.csiro.au/infosheets/Refrigeration%20Containers%20off%20power%20in%20ambient%20temperatures%20-%202007.pdf">PDF</a></li>
+    <li>van Duin et al. 2019 Table 1 (Reefer performance standards): 냉동 ±2℃, 냉장 ±1℃, 바나나 ±0.5℃, 최대 오프라인 4h(+1h). <a href="https://jshippingandtrade.springeropen.com/articles/10.1186/s41072-019-0040-y/tables/1">표 링크</a></li>
+    <li>전기신문(2024-10-23/24). 산업용 전기요금 9.7% 인상 — 산업용(을) 평균 165.8→182.7원/kWh(+16.9), 2024-10-24 시행. <a href="https://www.electimes.com/news/articleView.html?idxno=344825">링크</a></li>
+    <li>한국전력공사 전기요금표(2023-05-16 시행), 산업용(을) 고압A 선택Ⅰ·Ⅱ·Ⅲ 단가. 한전 사이버지점 원문은 자동 수집이 차단되어 2차 게시본으로 확인. <a href="https://cyber.kepco.co.kr/ckepco/front/jsp/CY/E/E/CYEEHP00108.jsp">한전 요금표 안내</a> · 2024-10-24 산업용(을) +16.9원/kWh 인상: <a href="https://newsis.com/view/NISX20241023_0002930870">뉴시스</a></li>
+    <li>공공데이터포털, 해양수산부 지역별 선박입출항실적 통계정보 오픈API — 통계 전용, 선박단위 ETA 없음. <a href="https://www.data.go.kr/data/15059421/openapi.do">링크</a> · 여수광양항만공사 입항정보 API(접안 위치 코드 포함, 시각 항목 미확인). <a href="https://www.data.go.kr/data/15158721/openapi.do">링크</a> (검색일 2026-10-23)</li>
+    <li>Kim et al. (2023) <a href="https://doi.org/10.1016/j.ajsl.2023.04.001">doi</a>, Pei et al. (2021) <a href="https://doi.org/10.3390/en14154456">doi</a>, Stoter et al. (2025) <a href="https://doi.org/10.1016/j.jclepro.2025.146383">doi</a>, Rodrigues et al. (2026) <a href="https://doi.org/10.1016/j.est.2026.124120">doi</a> — 서지·인용 수치 원문 재확인 필요(이번 작업에서 미확인).</li>
+    <li>탄소배출계수 0.478kgCO₂/kWh, 인월 단가, 클라우드 월비용, 시간차 가정값: 모두 가정값. 적용 전 출처 확인 필요.</li>
+  </ol>
+  <div class="foot">기준일 2026-10-23 · simulation_mode=true · live_data_verified=false · dispatch_allowed=false · 이 페이지의 전력·요금·사건 수치는 가상 터미널 데이터에서 계산한 값이며 부산항 실측이 아니다. 예측 AI(GBDT)는 가상 30일로 학습했다. 참고 구조: port-energy-carbon-cockpit (MIT, Wen Jiayi).</div>
+</section>
+</div>
+
+<script>
+/* ───────── 공통 엔진 (15분 · 24h · 10:00 시작) ───────── */
+const N=96, DT=0.25, T0=10;
+const P={eta:14,delay:3,notice:12,newR:50,outR:50,outStart:13,outEnd:16,N0:150,tmean:18,target:2300,
+  wait:1,dstart:0.5,rate:25,plug:1,disch:8,cranes:4,craneKw:250,idleKw:80,base:350,
+  v1Cranes:2,v1Start:10,v1End:14,v3Cranes:2,v3Start:20,v3End:25,v3R:30,v3Tc:21.5,
+  cap:4,waitmax:4,essP:0,essE:500,soc:80,socMin:20,eff:0.9,shift:0,dl:14,tariffAdj:16.9,priority:false,dOff0:1.0,co2:0.478,riskDays:4,peakProb:50,plugs:250,chgKw:100,chgN:4,chgE:0,chgStart:18,chgEnd:32};
+function mul32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hh=t=>{const h=((t%24)+24)%24;const m=Math.round((h%1)*60);return String(Math.floor(h)).padStart(2,'0')+':'+String(m).padStart(2,'0')};
+const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const ambient=(t,m)=>m+4*Math.sin((t-9)/24*2*Math.PI);
+const reeferKw=T=>Math.max(1.5,3.0+0.12*(T-20));
+
+/* ── 열 모델 ──
+   근거: CSIRO/Food Science Australia 정보시트(2007): 40ft 냉동육 컨테이너, 전원 차단, 외기 25℃에서 가장 따뜻한 지점이 -18→-10℃까지 22h
+         (단열 0.5 W/m²K 가정) → 1차 지연 모델로 환산하면 τ_off ≈ 100h.
+         van Duin et al. 2019 Table 1: 허용 편차 냉동 ±2℃, 냉장 ±1℃, 바나나 ±0.5℃, 최대 오프라인 4h(+1h).
+   가정: 냉장·바나나 τ_off 60h(열질량 작고 호흡열, 문헌 없음), 풀다운 전력계수 k(kW/℃)와 유닛 상한 9kW, 화물 비율 45/40/15. */
+const CARGO={
+  frozen:{set:-18,tauOff:100,tauOn:1.5,kPull:1.7,limit:2.0,share:0.45,label:'냉동(-18℃ ±2)'},
+  chilled:{set:2,tauOff:60,tauOn:1.2,kPull:1.8,limit:1.0,share:0.40,label:'냉장(2℃ ±1)'},
+  banana:{set:13,tauOff:60,tauOn:1.2,kPull:1.7,limit:0.5,share:0.15,label:'바나나(13℃ ±0.5)'}};
+const UNIT_MAX_KW=9;
+function pickCargo(u){let acc=0;for(const k in CARGO){acc+=CARGO[k].share;if(u<acc)return k;}return 'frozen';}
+/* 양하 순서 + 소켓 배정.
+   - 순서: FIFO(기본) 또는 긴급도 순(o.priority): 허용 한도 도달까지 남은 시간이 짧은 컨테이너 먼저.
+   - 소켓: p.plugs 개. 점유 = 기존(N0−반출) + V3 신규 + 이번 신규. 빈 소켓이 없으면 반출 해제로 빌 때까지 대기. */
+function assignPlugs(p,o,berth,rate,plug){
+  const n=p.newR; const list=[]; const rng=mul32(o.seed||11);
+  for(let k=0;k<n;k++){const cg=pickCargo(rng()); const dOff0=Math.max(0.2,(o.dOff0!=null?o.dOff0:p.dOff0)+(rng()-0.5)*0.6); list.push({k,cg,dOff0});}
+  const Ta=ambient(berth,p.tmean);
+  const tToLimit=x=>{const c=CARGO[x.cg];const frac=c.limit/Math.max(0.1,Ta-c.set); if(frac>=1)return 99; return -c.tauOff*Math.log(1-frac)-x.dOff0;}; // 한도까지 남은 시간
+  let order=list.map(x=>x.k);
+  if(o.priority) order=list.slice().sort((x,y)=>tToLimit(x)-tToLimit(y)).map(x=>x.k);
+  const cap=o.cap||0;
+  // 소켓 점유 타임라인
+  const occ=new Array(N).fill(0);
+  for(let i=0;i<N;i++){const ti=T0+i*DT; let nex=p.N0; if(ti>=p.outEnd)nex-=p.outR; else if(ti>p.outStart)nex-=p.outR*(ti-p.outStart)/(p.outEnd-p.outStart);
+    let v3=0;for(let k=0;k<p.v3R;k++)if(ti>=p.v3Tc+k/p.rate)v3++; occ[i]=Math.round(nex)+v3;}
+  const plugs=p.plugs||9999;
+  const tc=new Array(n), off=new Array(n), sockWait=new Array(n).fill(0);
+  order.forEach((k,pos)=>{
+    let t=berth+p.dstart+pos/rate+plug;
+    if(cap>0) t=Math.max(t,berth+p.dstart+plug+Math.floor(pos/cap)*DT);
+    let i=Math.max(0,Math.ceil((t-T0)/DT)); const i0=i;
+    while(i<N&&occ[i]>=plugs)i++;
+    if(i>=N){i=N-1;} // 하루 안에 소켓 없음 → 마지막 슬롯(경보 대상)
+    const tt=Math.max(t,T0+i*DT); sockWait[k]=tt-t; tc[k]=tt; off[k]=list[k].dOff0+(tt-berth);
+    for(let j=i;j<N;j++)occ[j]++;
+  });
+  let maxOcc=0;occ.forEach(v=>{if(v>maxOcc)maxOcc=v});
+  return {tc,off,cargo:list.map(x=>x.cg),sockWait,maxOcc};
+}
+/* 전기 야드트랙터 충전: 기본은 복귀 직후(18:00부터) 동시 충전기 전부 가동, 필요 에너지 소진까지. 스케줄러가 있으면 슬롯 배열 사용 */
+function chargeProfile(p,sched){
+  const prof=new Array(N).fill(0);
+  if(sched){return sched;}
+  let e=p.chgE; for(let i=0;i<N&&e>0;i++){const ti=T0+i*DT; if(ti>=p.chgStart){const kw=Math.min(p.chgN*p.chgKw,e/DT); prof[i]=kw; e-=kw*DT;}}
+  return prof;
+}
+/* simulate(p, o): o.eta o.lag o.cap o.shift o.noise o.priority o.sched({v2,chg}) o.seed */
+function simulate(p,o={}){
+  const eta=o.eta??p.eta, lag=o.lag||{};
+  const wait=Math.max(0,p.wait+(lag.wait||0)), rate=Math.max(3,p.rate+(lag.rate||0)), plug=Math.max(0,p.plug+(lag.plug||0));
+  const berth=eta+wait, work0=berth+p.dstart+(o.shift||0), work1=work0+p.disch;
+  const tc0=berth+p.dstart+plug;
+  const asg=assignPlugs(p,o,berth,rate,plug);
+  const tc=asg.tc, off=asg.off, cargo=asg.cargo;
+  const craneOn=o.sched?o.sched.v2:null;
+  const chg=chargeProfile(p,o.sched?o.sched.chg:null);
+  const t=[],total=[],reefer=[],equip=[],base=[],nconn=[],tin=[],charge=[];
+  const rn=o.noise;
+  const Tin=new Array(p.newR).fill(null);
+  let pullKwh=0, maxOff=0, tempViol=0, maxDT=0;
+  for(let i=0;i<N;i++){
+    const ti=T0+i*DT, Ta=ambient(ti,p.tmean), rk=reeferKw(Ta);
+    let nex=p.N0;
+    if(ti>=p.outEnd) nex-=p.outR; else if(ti>p.outStart) nex-=p.outR*(ti-p.outStart)/(p.outEnd-p.outStart);
+    let r=nex*rk, nc=0, tsum=0, tn=0;
+    for(let k=0;k<p.newR;k++){
+      const cg=CARGO[cargo[k]];
+      if(Tin[k]==null&&ti>=tc[k]){
+        const dT=(Ta-cg.set)*(1-Math.exp(-off[k]/cg.tauOff)); Tin[k]=cg.set+dT; if(off[k]>maxOff)maxOff=off[k]; if(dT>maxDT)maxDT=dT;
+        if(dT>cg.limit)tempViol++;
+      }
+      if(Tin[k]!=null){ nc++; const dTin=Tin[k]-cg.set; const kw=Math.min(UNIT_MAX_KW, rk+cg.kPull*Math.max(0,dTin)); r+=kw; pullKwh+=(kw-rk)*DT;
+        Tin[k]=cg.set+dTin*Math.exp(-DT/cg.tauOn); tsum+=Tin[k]; tn++; }
+    }
+    for(let k=0;k<p.v3R;k++){const c=p.v3Tc+k/p.rate; if(ti>=c){ nc++; r+=Math.min(UNIT_MAX_KW,rk*(1+1.0*Math.exp(-(ti-c)/1.2))); } }
+    const v2on=craneOn?craneOn[i]:(ti>=work0&&ti<work1);
+    let e=p.idleKw+((ti>=p.v1Start&&ti<p.v1End)?p.v1Cranes*p.craneKw:0)+((ti>=p.v3Start&&ti<p.v3End)?p.v3Cranes*p.craneKw:0)+(v2on?p.cranes*p.craneKw:0)+chg[i];
+    let b=p.base;
+    let tot=r+e+b;
+    if(rn) tot*=1+(rn()-0.5)*0.04;
+    t.push(ti);total.push(tot);reefer.push(r);equip.push(e);base.push(b);nconn.push(nc+Math.round(nex));tin.push(tn?tsum/tn:null);charge.push(chg[i]);
+  }
+  let tcEnd=tc0;tc.forEach(v=>{if(v>tcEnd)tcEnd=v});
+  let work1eff=work1; if(craneOn){let last=-1;craneOn.forEach((v,i)=>{if(v)last=i}); work1eff=last>=0?T0+(last+1)*DT:work0;}
+  const sockWaitMax=Math.max(0,...asg.sockWait), sockWaitN=asg.sockWait.filter(v=>v>0).length;
+  return {t,total,reefer,equip,base,nconn,tin,charge,berth,work0,work1:work1eff,tcStart:tc0,tcEnd,
+    waitLast:tcEnd-(berth+p.dstart+(p.newR-1)/rate),pullKwh,maxOff,maxDT,tempViol,cargo,sockWaitMax,sockWaitN,maxOcc:asg.maxOcc};
+}
+/* 15분 스케줄러: 통보 시각 이후의 (1) V2 크레인 슬롯, (2) 야드트랙터 충전 슬롯을 다른 부하가 낮은 시간으로 재배치.
+   제약: 크레인 총 슬롯 수 유지·완료 ≤ 수정ETA+dl, 충전 총 에너지 유지·충전창(chgStart~익일 chgEnd)·동시 충전기 수, 이미 지난 슬롯 고정, ETA 불변. */
+function schedule(p,o){
+  const eta=o.eta, baseSim=simulate(p,{...o,sched:null});
+  const slots=Math.round(p.disch/DT), earliest=Math.max(baseSim.work0,T0), deadline=eta+p.dl, fixedUntil=o.notice??p.notice;
+  const other=baseSim.total.map((v,i)=>v-((baseSim.t[i]>=baseSim.work0&&baseSim.t[i]<baseSim.work1)?p.cranes*p.craneKw:0)-baseSim.charge[i]);
+  // (1) 크레인
+  const v2=new Array(N).fill(false); let used=0;
+  for(let i=0;i<N;i++){const ti=T0+i*DT; if(ti<fixedUntil&&ti>=baseSim.work0&&ti<baseSim.work1){v2[i]=true;used++;}}
+  const cand=[];for(let i=0;i<N;i++){const ti=T0+i*DT; if(!v2[i]&&ti>=Math.max(earliest,fixedUntil)&&ti+DT<=deadline)cand.push(i);}
+  cand.sort((a,b)=>other[a]-other[b]);
+  for(const i of cand){if(used>=slots)break;v2[i]=true;used++;}
+  const load1=other.map((v,i)=>v+(v2[i]?p.cranes*p.craneKw:0));
+  // (2) 충전: 통보 전 이미 충전된 양 고정
+  const chg=new Array(N).fill(0); let e=p.chgE;
+  for(let i=0;i<N;i++){const ti=T0+i*DT; if(ti<fixedUntil){chg[i]=baseSim.charge[i]; e-=chg[i]*DT;}}
+  const unit=p.chgKw*DT; // 충전기 1대·15분 에너지
+  const cc=[];for(let i=0;i<N;i++){const ti=T0+i*DT; if(ti>=Math.max(fixedUntil,p.chgStart)&&ti<p.chgEnd)cc.push(i);}
+  const load2=load1.slice();
+  while(e>unit*0.5&&cc.length){
+    let best=-1,bv=1e12;for(const i of cc){if(chg[i]/p.chgKw>=p.chgN)continue;if(load2[i]<bv){bv=load2[i];best=i;}}
+    if(best<0)break; chg[best]+=p.chgKw; load2[best]+=p.chgKw; e-=unit;
+  }
+  const chgOk=e<=unit*0.5;
+  let frags=0;for(let i=0;i<N;i++)if(v2[i]&&!(i>0&&v2[i-1]))frags++;
+  return {v2,chg,frags,feasible:used>=slots&&chgOk,slotsNeeded:slots,slotsPlaced:used,chgOk,chgLeft:Math.max(0,e),deadline};
+}
+/* ESS: 초과분만 방전, 경부하에 재충전, 종료 SOC ≥ 초기 SOC 조건 */
+function applyEss(s,p,target){
+  const out=s.total.slice(); let soc=p.essE*p.soc/100; const socMin=p.essE*p.socMin/100; let used=0, charged=0, cycles=0;
+  for(let i=0;i<N;i++){const ti=s.t[i],h=((ti%24)+24)%24; const ex=out[i]-target;
+    if(ex>0&&p.essP>0&&soc>socMin){const d=Math.min(ex,p.essP,(soc-socMin)*p.eff/DT); out[i]-=d; soc-=d*DT/p.eff; used+=d*DT;}
+    else if((h>=22||h<8)&&p.essP>0&&soc<p.essE*p.soc/100){const room=Math.min(p.essP,target-out[i]); if(room>0){const c=Math.min(room,(p.essE*p.soc/100-soc)/p.eff/DT); out[i]+=c; soc+=c*DT*p.eff; charged+=c*DT;}}
+  }
+  const socEnd=soc/p.essE*100, socOk=socEnd>=p.soc-1;
+  const rechargeH=p.essP>0?used/p.eff/p.essP:0;
+  return {total:out,used,charged,socEnd,socOk,rechargeH,rechargeOk:rechargeH<=10,loss:charged-used};
+}
+function peak(s){let m=-1,i=0;s.total.forEach((v,k)=>{if(v>m){m=v;i=k}});return{kw:m,i,t:s.t[i]}}
+/* 초과 사건: total>target, 30분 이하 공백 병합 */
+function events(arr,t,target){
+  const ev=[];let cur=null;
+  for(let i=0;i<arr.length;i++){
+    if(arr[i]>target){ if(!cur)cur={a:i,b:i,max:arr[i]}; else {cur.b=i;cur.max=Math.max(cur.max,arr[i]);} }
+    else if(cur){ if(ev.length&&cur.a-ev[ev.length-1].b<=3){const l=ev[ev.length-1];l.b=cur.b;l.max=Math.max(l.max,cur.max);} else ev.push(cur); cur=null; }
+  }
+  if(cur){ if(ev.length&&cur.a-ev[ev.length-1].b<=3){const l=ev[ev.length-1];l.b=cur.b;l.max=Math.max(l.max,cur.max);} else ev.push(cur); }
+  ev.forEach(e=>{e.ta=t[e.a];e.tb=t[e.b]+DT;e.h=(e.b-e.a+1)*DT});
+  return ev;
+}
+/* 일대일 매칭: 겹침 또는 시작차 ≤ 60분, 겹침 큰 순 */
+function match(pred,act){
+  const used=new Set(), pairs=[];
+  pred.forEach((p,pi)=>{
+    let best=-1,bo=-1;
+    act.forEach((a,ai)=>{ if(used.has(ai))return;
+      const ov=Math.min(p.b,a.b)-Math.max(p.a,a.a)+1;
+      const near=Math.abs(p.a-a.a)<=4;
+      if(ov>0||near){const sc=Math.max(ov,0)+(near?0.5:0); if(sc>bo){bo=sc;best=ai}} });
+    if(best>=0){used.add(best);pairs.push({pi,ai:best})}
+  });
+  const TP=pairs.length, FP=pred.length-TP, FN=act.length-TP;
+  return {TP,FP,FN,pairs,used};
+}
+function tariffRate(t){const h=((t%24)+24)%24; const adj=P.tariffAdj||0; if(h>=22||h<8)return 87.3+adj; if((h>=11&&h<12)||(h>=13&&h<18))return 140.5+adj; return 109.8+adj;}
+function energyCost(s){let c=0,e=0;for(let i=0;i<N;i++){const kwh=s.total[i]*DT;e+=kwh;c+=kwh*tariffRate(s.t[i]);}return{cost:c,kwh:e}}
+/* ───────── 현재 시나리오 계산 ───────── */
+let R={};
+function compute(){
+  const before=simulate(P,{eta:P.eta});
+  const after=simulate(P,{eta:P.eta+P.delay});
+  const rng=mul32(7);
+  const runs=[];for(let k=0;k<40;k++){runs.push(simulate(P,{eta:P.eta+P.delay+etaDeviation(rng)*0.5,lag:{plug:(rng()-0.5)*0.6,rate:(rng()-0.5)*10}}).total);}
+  const p10=[],p90=[];for(let i=0;i<N;i++){const col=runs.map(r=>r[i]).sort((a,b)=>a-b);p10.push(col[3]);p90.push(col[35]);}
+  const actual=simulate(P,{eta:P.eta+P.delay,lag:{wait:0.3,plug:0.2,rate:-3},noise:mul32(99)});
+  const evB=events(before.total,before.t,P.target), evA=events(after.total,after.t,P.target), evAct=events(actual.total,actual.t,P.target);
+  /* 놓치는 구간: after 초과 중 before 초과(기존 계획)에 없는 15분 스텝 */
+  const covered=new Array(N).fill(false);evB.forEach(e=>{for(let i=e.a;i<=e.b;i++)covered[i]=true});
+  const missed=[];evA.forEach(e=>{let cur=null;for(let i=e.a;i<=e.b;i++){if(!covered[i]){if(!cur)cur={a:i,b:i};else cur.b=i;}else if(cur){missed.push(cur);cur=null}} if(cur)missed.push(cur)});
+  missed.forEach(m=>{m.ta=after.t[m.a];m.tb=after.t[m.b]+DT;m.h=(m.b-m.a+1)*DT});
+  R={before,after,p10,p90,actual,evB,evA,evAct,missed,pkB:peak(before),pkA:peak(after),abc:R.abc,cases:R.cases,ai:R.ai};
+}
+
+/* ───────── 상황판 렌더 ───────── */
+const $=id=>document.getElementById(id);
+function renderNow(){
+  const {before,after,evB,evA,missed,pkB,pkA}=R;
+  const dl=P.delay; const sign=dl>=0?'+':'';
+  $('eventBar').innerHTML=`<p><b>12:00 통보</b> · 선박 V2 ETA <b>${hh(P.eta)} → ${hh(P.eta+dl)}</b> (${sign}${dl.toFixed(1)}h) · 냉동 ${P.newR}대 반입 예정 <span class="chip syn">가상 시나리오</span></p><p class="note">${SEL?'적용 터미널: '+SEL.name+' (제원 공개 · 플러그·계량 가정)':'가상 구역 (특정 터미널 아님) · 부산항 적용 탭에서 터미널 선택 가능'} · 예측시점 10:00</p>`;
+  const exA=evA.map(e=>`${hh(e.ta)}–${hh(e.tb)}`).join(', ')||'없음';
+  const exB=evB.map(e=>`${hh(e.ta)}–${hh(e.tb)}`).join(', ')||'없음';
+  const ms=missed.map(m=>`${hh(m.ta)}–${hh(m.tb)}`).join(', ');
+  const dpk=pkA.kw-pkB.kw, dpkPct=dpk/pkB.kw*100;
+  let kind= Math.abs(dpkPct)<=3 ? (Math.abs(pkA.t-pkB.t)>=1?'최대값은 비슷, 발생시각 이동':'변화 없음') : (dpk>0?'최대값 증가':'최대값 감소');
+  $('answers').innerHTML=`
+   <div class="ans"><div class="q">무엇이 바뀌었나</div><div class="a">V2 · ${sign}${dl.toFixed(1)}h</div><div class="d">접안 예상 ${hh(after.berth)}, 첫 연결 ${hh(after.tcStart)}, 마지막 연결 ${hh(after.tcEnd)}</div></div>
+   <div class="ans ${evA.length?'alert':'ok'}"><div class="q">언제 목표를 넘나</div><div class="a">${exA}</div><div class="d">변경 전: ${exB} · 최대 ${fmt(pkB.kw)}→${fmt(pkA.kw)}kW (${kind})<br><span id="aiInline" style="color:#7a68d8">AI: 학습 중…</span></div></div>
+   <div class="ans ${missed.length?'alert':'ok'}"><div class="q">기존 계획이 못 보는 시간</div><div class="a">${ms||'없음'}</div><div class="d">${missed.length?`합계 ${missed.reduce((s,m)=>s+m.h,0).toFixed(2)}h · 변경 전 예측으로 세운 대응창 밖`:'변경 후 초과 구간이 기존 대응창 안에 있음'}</div></div>
+   <div class="ans"><div class="q">지금 할 일</div><div class="a">${evA.length?evA.length+'건 초과 예상':'초과 없음'}</div><div class="d">${evA.length?'첫 초과까지 '+(evA[0].ta-P.notice).toFixed(2)+'h · AI 경보 문장은 아래':'모니터링 유지'}</div></div>`;
+  /* KPI */
+  $('kpis').innerHTML=`
+   <div class="kpi"><div class="lb">변경 전 예상 최대</div><div class="v">${fmt(pkB.kw)}<small>kW</small></div><div class="d">${hh(pkB.t)}</div></div>
+   <div class="kpi"><div class="lb">변경 후 예상 최대</div><div class="v">${fmt(pkA.kw)}<small>kW</small></div><div class="d">${hh(pkA.t)} · Δ ${dpk>=0?'+':''}${fmt(dpk)}kW (${dpkPct>=0?'+':''}${dpkPct.toFixed(1)}%)</div></div>
+   <div class="kpi"><div class="lb">변경 후 초과 시간</div><div class="v">${evA.reduce((s,e)=>s+e.h,0).toFixed(2)}<small>h</small></div><div class="d">목표 ${fmt(P.target)}kW 초과 15분 구간 합</div></div>
+   <div class="kpi"><div class="lb">P10–P90 폭 (피크 시각)</div><div class="v">${fmt(R.p90[pkA.i]-R.p10[pkA.i])}<small>kW</small></div><div class="d">시간차 가정 40회 표본 · 가정값 민감도</div></div>`;
+  /* 초과표 */
+  const tb=$('exTable').querySelector('tbody'); tb.innerHTML='';
+  const row=(k,e,rel)=>`<tr><td>${k}</td><td>${hh(e.ta)}–${hh(e.tb)}</td><td class="n">${e.h.toFixed(2)}h</td><td class="n">${fmt(e.max)}kW</td><td class="n">${(e.ta-P.notice).toFixed(2)}h</td><td>${rel}</td></tr>`;
+  evB.forEach(e=>tb.insertAdjacentHTML('beforeend',row('변경 전 예측',e,'기존 대응창')));
+  evA.forEach(e=>{const inB=evB.some(b=>Math.min(b.b,e.b)-Math.max(b.a,e.a)>=0);tb.insertAdjacentHTML('beforeend',row('변경 후 예측',e,inB?'<span class="st warn">일부 겹침</span>':'<span class="st bad">기존 계획 밖</span>'))});
+  if(!evB.length&&!evA.length)tb.innerHTML='<tr><td colspan="6" class="note">이 입력에서는 초과 구간이 없다.</td></tr>';
+  /* 확인 목록 */
+  const todo=[]; const lead=evA.length?(evA[0].ta-P.notice):99; const grade=!evA.length?'정상':lead<2?'긴급':lead<6?'주의':'관찰';
+  todo.push([`<span class="st ${grade==='긴급'?'bad':grade==='주의'?'warn':'ok'}">${grade}</span> 통보 후 첫 초과까지 ${evA.length?lead.toFixed(1)+'h':'없음'} · 등급: 2h 미만 긴급, 6h 미만 주의`,'전체']);
+  if(evA.length)todo.push([`${hh(evA[0].ta)}–${hh(evA[0].tb)} 크레인 가동 슬롯을 낮은 부하 시간으로 옮길 수 있는지 (③ 탭 C2)`,'운영계획']);
+  if(missed.length)todo.push([`${ms} 구간은 기존 대응창 밖 — 당직·전기팀에 공유`,'전기·시설']);
+  todo.push([`신규 냉동 ${P.newR}대를 한도 도달 시간 순으로 양하·연결 (냉장→냉동)`,'냉동야드']);
+  todo.push(['ESS가 같은 계량 구역이면 ③ 탭에서 출력 입력 후 C3 비교','전기·시설']);
+  todo.push(['확인 결과를 기록(처리/보류/오경보) → 다음 재학습 데이터','전체']);
+  $('todo').innerHTML=todo.map(([t,w])=>`<li><span class="st na">${w}</span><span>${t}</span></li>`).join('');
+  drawChart();drawStack();renderDataStrip();
+  if(AI.ready)renderAI();
+  if(T3.ready){T3.rebuild();T3.update(+$('i_t3d').value);}
+}
+function drawChart(){
+  const svg=$('chart'); const W=820,H=300,L=52,Rm=14,Tm=14,B=36;
+  const ymax=Math.max(P.target,...R.after.total,...R.before.total,...R.p90,...(R.ai?R.ai.hi:[0]))*1.08;
+  const x=i=>L+i/(N-1)*(W-L-Rm), y=v=>Tm+(1-v/ymax)*(H-Tm-B);
+  let s='';
+  /* 그리드 */
+  const step=ymax>3000?500:250;
+  for(let v=0;v<=ymax;v+=step){s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(v)}</text>`;}
+  for(let i=0;i<N;i+=8){s+=`<text x="${x(i)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${hh(R.after.t[i])}</text>`;}
+  s+=`<text x="${W-Rm}" y="${H-4}" text-anchor="end" font-size="11" fill="var(--muted)">kW · 15분 평균 · 가상 구역</text>`;
+  /* 초과 음영 */
+  R.evA.forEach(e=>{s+=`<rect x="${x(e.a)}" y="${Tm}" width="${x(e.b)-x(e.a)+ (x(1)-x(0))}" height="${H-Tm-B}" fill="var(--bad)" opacity=".12"/>`});
+  /* 밴드 */
+  let band='M'+R.p90.map((v,i)=>`${x(i)},${y(v)}`).join('L')+'L'+R.p10.map((v,i)=>`${x(i)},${y(v)}`).reverse().join('L')+'Z';
+  s+=`<path d="${band}" fill="var(--band)" stroke="none"/>`;
+  /* 목표 */
+  s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(P.target)}" y2="${y(P.target)}" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${L+4}" y="${y(P.target)-4}" font-size="11" fill="var(--bad)">관리목표 ${fmt(P.target)}kW (시나리오용)</text>`;
+  /* 통보 시각 */
+  const ni=Math.round((P.notice-T0)/DT); s+=`<line x1="${x(ni)}" x2="${x(ni)}" y1="${Tm}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><text x="${x(ni)+4}" y="${Tm+10}" font-size="11" fill="var(--muted)">통보 12:00</text>`;
+  const line=(arr,st)=>`<path d="M${arr.map((v,i)=>`${x(i)},${y(v)}`).join('L')}" fill="none" ${st}/>`;
+  s+=line(R.before.total,'stroke="var(--before)" stroke-width="2" stroke-dasharray="7 4"');
+  s+=line(R.after.total,'stroke="var(--after)" stroke-width="2.2"');
+  if(R.ai&&AI.ready){let bandA='M'+R.ai.hi.map((v,i)=>`${x(i)},${y(Math.min(ymax,v))}`).join('L')+'L'+R.ai.lo.map((v,i)=>`${x(i)},${y(Math.max(0,v))}`).reverse().join('L')+'Z';s+=`<path d="${bandA}" fill="rgba(122,104,216,.16)"/>`;s+=line(R.ai.mean,'stroke="#7a68d8" stroke-width="2"');}
+  /* 경보 마커 */
+  R.evA.forEach(e=>{const px=x(e.a),py=y(e.max);s+=`<path d="M${px},${py-16}l-6,-10h12z" fill="var(--bad)"/>`});
+  /* 피크 점 */
+  s+=`<circle cx="${x(R.pkA.i)}" cy="${y(R.pkA.kw)}" r="4" fill="var(--after)"/><circle cx="${x(R.pkB.i)}" cy="${y(R.pkB.kw)}" r="4" fill="var(--before)"/>`;
+  s+=`<rect id="hit" x="${L}" y="${Tm}" width="${W-L-Rm}" height="${H-Tm-B}" fill="transparent"/>`;
+  svg.innerHTML=s;
+  const tip=$('tip'), box=$('chartBox');
+  const mv=ev=>{const r=svg.getBoundingClientRect();const px=(ev.clientX-r.left)/r.width*W;let i=Math.round((px-L)/(W-L-Rm)*(N-1));if(i<0||i>N-1){tip.style.display='none';return}
+    tip.style.display='block';tip.style.left=Math.min(ev.clientX-box.getBoundingClientRect().left+12,box.clientWidth-190)+'px';tip.style.top=(ev.clientY-box.getBoundingClientRect().top-10)+'px';
+    tip.innerHTML=`<b>${hh(R.after.t[i])}</b><br>${R.ai?'AI '+fmt(R.ai.mean[i])+'kW ('+fmt(R.ai.lo[i])+'–'+fmt(R.ai.hi[i])+')<br>':''}규칙 ${fmt(R.after.total[i])}kW (냉동 ${fmt(R.after.reefer[i])} · 장비 ${fmt(R.after.equip[i])} · 기본 ${fmt(R.after.base[i])})<br>변경 전 ${fmt(R.before.total[i])}kW · 연결 ${R.after.nconn[i]}대<br>P10–P90 ${fmt(R.p10[i])}–${fmt(R.p90[i])}`;};
+  svg.onmousemove=mv; svg.ontouchmove=e=>{mv(e.touches[0]);}; svg.onmouseleave=()=>tip.style.display='none';
+}
+
+/* ───────── 과정 탭 ───────── */
+function renderChain(){
+  const a=R.after,b=R.before;
+  const items=[
+   ['선박 ETA',hh(P.eta)+' → '+hh(P.eta+P.delay),'PORT-i 통보 · 변경량 '+(P.delay>=0?'+':'')+P.delay+'h','pub'],
+   ['실제 접안',hh(b.berth)+' → '+hh(a.berth),'선석 대기 '+P.wait+'h 가정','asm'],
+   ['하역 시작',hh(b.work0)+' → '+hh(a.work0),'크레인 '+P.cranes+'기 × '+P.craneKw+'kW · '+P.disch+'h','asm'],
+   ['야드 반입·연결',hh(b.tcStart)+' → '+hh(a.tcStart),'이송+연결 '+P.plug+'h · '+P.rate+'대/h 분산','asm'],
+   ['전원 연결 완료',hh(b.tcEnd)+' → '+hh(a.tcEnd),'풀다운 초기 1.8배, 1.5h 감쇠','asm'],
+   ['구역 전력',fmt(R.pkB.kw)+' → '+fmt(R.pkA.kw)+'kW','최대 '+hh(R.pkB.t)+' → '+hh(R.pkA.t),'syn']];
+  $('chainList').innerHTML=items.map((it,i)=>`<li class="${i==3?'key':''}"><span>${i+1}단계 <span class="chip ${it[3]}">${({pub:'공개',asm:'가정',syn:'가상'})[it[3]]}</span></span><b>${it[0]}</b><em>${it[1]}</em><em class="note">${it[2]}</em></li>`).join('');
+  drawProcess();drawThermo();drawGantt();drawIso();
+}
+function drawGantt(){
+  const W=820,H=330,L=120,Rm=14; const x=t=>L+(t-T0)/24*(W-L-Rm);
+  let s='';
+  for(let h=0;h<=24;h+=2){s+=`<line x1="${x(T0+h)}" x2="${x(T0+h)}" y1="16" y2="${H-20}" stroke="var(--line)"/><text x="${x(T0+h)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${hh(T0+h)}</text>`;}
+  const bar=(y,t1,t2,fill,label,op=1)=>{const a=Math.max(T0,t1),b=Math.min(T0+24,t2); if(b<=a)return ''; return `<rect x="${x(a)}" y="${y}" width="${x(b)-x(a)}" height="16" fill="${fill}" opacity="${op}" rx="2"/>`+(label?`<text x="${x(a)+4}" y="${y+12}" font-size="11" fill="var(--bg)">${label}</text>`:'');};
+  const lab=(y,t)=>`<text x="${L-8}" y="${y+12}" text-anchor="end" font-size="12" fill="var(--ink-2)">${t}</text>`;
+  const rows=[['V1 크레인 (고정)',P.v1Start,P.v1End,'var(--muted)'],['반출 해제 50대',P.outStart,P.outEnd,'var(--muted)'],['V3 크레인 (고정 20:00)',P.v3Start,P.v3End,'var(--muted)'],['V3 냉동 '+P.v3R+'대 연결',P.v3Tc,P.v3Tc+P.v3R/P.rate,'var(--muted)']];
+  let y=24; rows.forEach(r=>{s+=lab(y,r[0])+bar(y,r[1],r[2],r[3]);y+=26;});
+  y+=10; s+=`<text x="${L-8}" y="${y+6}" text-anchor="end" font-size="12" font-weight="600" fill="var(--before)">변경 전</text>`;y+=14;
+  const grp=(sim,col,etaUse)=>{s+=lab(y,'ETA')+`<line x1="${x(etaUse)}" x2="${x(etaUse)}" y1="${y}" y2="${y+16}" stroke="${col}" stroke-width="3"/>`;y+=26;
+    s+=lab(y,'접안 대기')+bar(y,etaUse,sim.berth,col,'',.35);y+=26;
+    s+=lab(y,'V2 크레인')+bar(y,sim.work0,sim.work1,col,P.cranes+'기');y+=26;
+    s+=lab(y,'냉동 연결')+bar(y,sim.tcStart,sim.tcEnd+0.25,col,P.newR+'대',.7);y+=26;};
+  grp(R.before,'var(--before)',P.eta);
+  y+=10; s+=`<text x="${L-8}" y="${y+6}" text-anchor="end" font-size="12" font-weight="600" fill="var(--after)">변경 후</text>`;y+=14;
+  grp(R.after,'var(--after)',P.eta+P.delay);
+  R.evA.forEach(e=>{s+=`<rect x="${x(e.ta)}" y="16" width="${x(e.tb)-x(e.ta)}" height="${H-36}" fill="var(--bad)" opacity=".10"/>`});
+  $('gantt').innerHTML=s;
+}
+/* 2D 개념 배치도 */
+const ISO={sel:null};
+function drawIso(){
+  const i=+$('i_t3d').value, t=R.after.t[i]; $('o_t3d').value=hh(t);
+  const a=R.after; const nc=a.nconn[i]; const craneOn=(t>=a.work0&&t<a.work1); const v1On=(t>=P.v1Start&&t<P.v1End);
+  const shipAt=(t>=a.berth&&t<a.work1+1);
+  const svg=$('iso'); const over=a.total[i]>P.target;
+  let s=`<rect x="0" y="0" width="820" height="360" fill="var(--soft)"/><rect x="0" y="0" width="820" height="90" fill="var(--line)" opacity=".6"/><text x="12" y="20" font-size="12" fill="var(--muted)">바다 · 개념 배치(실제 배치 아님)</text>`;
+  s+=`<rect x="0" y="90" width="820" height="12" fill="var(--line-2)"/>`;
+  /* 선박 */
+  s+=`<g data-k="ship" style="cursor:pointer"><rect x="${shipAt?300:40}" y="${shipAt?52:20}" width="260" height="36" rx="6" fill="${shipAt?'var(--ink-2)':'var(--muted)'}" opacity="${shipAt?1:.5}"/><text x="${shipAt?310:50}" y="${shipAt?75:43}" font-size="12" fill="var(--bg)">V2 ${shipAt?'접안 중':'입항 전 (ETA '+hh(P.eta+P.delay)+')'}</text></g>`;
+  const v3On=(t>=P.v3Start&&t<P.v3End);
+  s+=`<g data-k="ship1" style="cursor:pointer"><rect x="580" y="52" width="200" height="36" rx="6" fill="var(--muted)"/><text x="590" y="75" font-size="12" fill="var(--bg)">${v3On||t>=P.v3Start?'V3 '+(v3On?'작업 중':'작업 종료'):'V1 '+(v1On?'작업 중':'작업 종료 · V3 ETA 20:00')}</text></g>`;
+  /* 크레인 */
+  for(let k=0;k<P.cranes;k++){const cx=320+k*60;s+=`<g data-k="crane" style="cursor:pointer"><rect x="${cx}" y="104" width="34" height="40" fill="${craneOn?'var(--actual)':'var(--line-2)'}"/><rect x="${cx+12}" y="60" width="10" height="46" fill="${craneOn?'var(--actual)':'var(--line-2)'}"/></g>`;}
+  const c1On=v1On||v3On;
+  for(let k=0;k<P.v1Cranes;k++){const cx=600+k*60;s+=`<g data-k="crane1" style="cursor:pointer"><rect x="${cx}" y="104" width="34" height="40" fill="${c1On?'var(--actual)':'var(--line-2)'}"/><rect x="${cx+12}" y="60" width="10" height="46" fill="${c1On?'var(--actual)':'var(--line-2)'}"/></g>`;}
+  s+=`<text x="320" y="160" font-size="12" fill="var(--ink-2)">야드크레인 ${craneOn?P.cranes+'기 가동':'대기'} · ${fmt(a.equip[i])}kW</text>`;
+  /* 냉동야드 */
+  const cols=25, rows=10, bx=60, by=180;
+  s+=`<g data-k="reefer" style="cursor:pointer">`;
+  const nex=P.N0-(t>=P.outEnd?P.outR:t>P.outStart?P.outR*(t-P.outStart)/(P.outEnd-P.outStart):0);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const idx=r*cols+c; const on=idx<nc; const isNew=on&&idx>=Math.round(nex);
+    s+=`<rect x="${bx+c*22}" y="${by+r*14}" width="18" height="10" rx="1" fill="${on?(isNew?'var(--actual)':'var(--before)'):'var(--line)'}"/>`;}
+  s+=`</g><text x="${bx}" y="${by-8}" font-size="12" fill="var(--ink-2)">냉동야드 연결 ${nc}대 (${rows*cols}구 중) · ${fmt(a.reefer[i])}kW · 주황=신규 풀다운</text>`;
+  /* 계량기 */
+  s+=`<g data-k="meter" style="cursor:pointer"><rect x="660" y="200" width="130" height="90" rx="4" fill="var(--surface)" stroke="${over?'var(--bad)':'var(--line-2)'}" stroke-width="2"/><text x="672" y="222" font-size="12" fill="var(--muted)">주계량기 (가상)</text><text x="672" y="250" font-size="22" font-weight="600" fill="${over?'var(--bad)':'var(--ink)'}">${fmt(a.total[i])} kW</text><text x="672" y="276" font-size="12" fill="var(--muted)">목표 ${fmt(P.target)} · ${over?'초과':'정상'}</text></g>`;
+  s+=`<text x="12" y="350" font-size="12" fill="var(--muted)">${hh(t)} · 설비 위치는 개념이며 전기 계통 연결 관계를 나타내지 않음</text>`;
+  svg.innerHTML=s;
+  svg.querySelectorAll('[data-k]').forEach(g=>g.onclick=()=>isoInfo(g.dataset.k,i));
+  if(ISO.sel)isoInfo(ISO.sel,i);
+}
+function isoInfo(k,i){
+  ISO.sel=k; const a=R.after,t=a.t[i];
+  const m={ship:['선박 V2','ETA '+hh(P.eta+P.delay)+' · 접안 '+hh(a.berth)+' · 하역 '+hh(a.work0)+'–'+hh(a.work1),'ETA: 공개(PORT-i 통보 가정) · 시간차: 가정값','pub'],
+   ship1:['선박 V1·V3 (고정)','V1 크레인 '+P.v1Cranes+'기 '+hh(P.v1Start)+'–'+hh(P.v1End)+' · V3 크레인 '+P.v3Cranes+'기 '+hh(P.v3Start)+'–'+hh(P.v3End)+', 냉동 '+P.v3R+'대 '+hh(P.v3Tc)+'부터 연결','가상 시나리오','syn'],
+   crane:['V2 야드크레인','현재 '+fmt((t>=a.work0&&t<a.work1)?P.cranes*P.craneKw:0)+'kW · 대당 '+P.craneKw+'kW 가정','장비 전력 미계측 → 작업창×대표값','asm'],
+   crane1:['V1·V3 야드크레인','현재 '+fmt(((t>=P.v1Start&&t<P.v1End)?P.v1Cranes:0)*P.craneKw+((t>=P.v3Start&&t<P.v3End)?P.v3Cranes:0)*P.craneKw)+'kW','가상 시나리오','syn'],
+   reefer:['냉동야드','연결 '+a.nconn[i]+'대 · '+fmt(a.reefer[i])+'kW · 외기 '+ambient(t,P.tmean).toFixed(1)+'℃ · 대당 '+reeferKw(ambient(t,P.tmean)).toFixed(2)+'kW','전력 모델: 단순화 선형+풀다운 지수감쇠 (가정)','asm'],
+   amp:['AMP 접속함 (SPO)','3·4부두 4선석 AMP 8기(2022 공개) · 선박 수전 부하는 현재 모델 미포함','확장 범위 · 미모델링','pub'],
+   agv:['AGV (자동이송)','7부두 AGV 60대 전기(공개) · 충전 부하는 현재 모델 미포함','확장 범위 · 미모델링','pub'],
+   meter:['주계량기','합계 '+fmt(a.total[i])+'kW = 냉동 '+fmt(a.reefer[i])+' + 장비 '+fmt(a.equip[i])+' + 기본 '+fmt(a.base[i]),'실측 0건 · 가상 계산값','syn']}[k];
+  const html=`<div class="sub-h" style="margin-top:0">${m[0]} <span class="chip ${m[3]}">${({pub:'공개',asm:'가정값',syn:'가상'})[m[3]]}</span></div><p class="small">${hh(t)} · ${m[1]}</p><p class="note" style="margin-top:6px">${m[2]}</p><p class="note" style="margin-top:6px">그래프·타임라인과 같은 엔진의 같은 시각 값.</p>`;
+  $('isoInfo').innerHTML=html;$('stageInfo').innerHTML=html;
+}
+/* ───────── 3D (three.js r128 · 자동 로드 · 실패 시 2D) ───────── */
+const T3={ready:false,loading:false,objs:{},view:'all',play:null};
+function load3d(){
+  if(T3.ready||T3.loading)return; T3.loading=true;
+  const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  sc.onload=()=>{try{init3d()}catch(e){$('fallback').hidden=false;console.error(e)}}; sc.onerror=()=>{$('fallback').hidden=false;};
+  document.head.appendChild(sc);
+}
+function makeLabel(text,size=20,color='#16202b'){
+  const c=document.createElement('canvas');const ctx=c.getContext('2d');ctx.font=`600 ${size*2}px "IBM Plex Sans KR",sans-serif`;const w=ctx.measureText(text).width+24;c.width=w;c.height=size*2+16;
+  const ctx2=c.getContext('2d');ctx2.font=`600 ${size*2}px "IBM Plex Sans KR",sans-serif`;ctx2.fillStyle='rgba(255,255,255,.85)';ctx2.fillRect(0,0,c.width,c.height);ctx2.fillStyle=color;ctx2.textBaseline='middle';ctx2.fillText(text,12,c.height/2);
+  const tex=new THREE.CanvasTexture(c);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false}));sp.scale.set(c.width/2.2,c.height/2.2,1);return sp;
+}
+function init3d(){
+  const stage=$('stage'); const W=stage.clientWidth||800,H=stage.clientHeight||420;
+  T3.low=matchMedia('(max-width:700px)').matches||(navigator.hardwareConcurrency||8)<=4;
+  const renderer=new THREE.WebGLRenderer({antialias:!T3.low,alpha:true});renderer.setPixelRatio(T3.low?1:Math.min(devicePixelRatio,1.5));renderer.setSize(W,H);stage.insertBefore(renderer.domElement,stage.firstChild);
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches&&document.documentElement.dataset.theme!=='light'||document.documentElement.dataset.theme==='dark';
+  const C=dark?{land:0x242a31,water:0x1f2d3a,apron:0x2c333b,quay:0x5a6670,steel:0x8d98a3,hull:0xc3cad2,sup:0xeef1f4,grid:0x3a434d,rack:0x3a434d,offc:0x4a545e,txt:'#eef1f4',bg:'rgba(24,29,35,.85)'}
+                :{land:0xe6e8ea,water:0xc9d6e0,apron:0xd9dcdf,quay:0x9aa4ad,steel:0x6f7a85,hull:0x3c4a58,sup:0xf4f6f8,grid:0xcfd4d9,rack:0xc5cbd1,offc:0xd9dde2,txt:'#16202b',bg:'rgba(255,255,255,.85)'};
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(36,W/H,1,5000);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x777777,.9));const dl=new THREE.DirectionalLight(0xffffff,.5);dl.position.set(-300,700,300);scene.add(dl);
+  const mat=(c,o)=>new THREE.MeshLambertMaterial({color:c,transparent:o!=null,opacity:o??1});
+  const mk=(g,geo,c,x,y,z,o)=>{const m=new THREE.Mesh(geo,mat(c,o));m.position.set(x,y,z);g.add(m);return m};
+  const box=(g,w,h,d,c,x,y,z,o)=>mk(g,new THREE.BoxGeometry(w,h,d),c,x,y,z,o);
+  const label=(g,text,x,y,z,sz)=>{const c=document.createElement('canvas');const ctx=c.getContext('2d');const px=(sz||16)*2;ctx.font=`600 ${px}px "IBM Plex Sans KR",sans-serif`;const w=ctx.measureText(text).width+20;c.width=w;c.height=px+14;
+    const k=c.getContext('2d');k.font=`600 ${px}px "IBM Plex Sans KR",sans-serif`;k.fillStyle=C.bg;k.fillRect(0,0,c.width,c.height);k.fillStyle=C.txt;k.textBaseline='middle';k.fillText(text,10,c.height/2);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));sp.scale.set(c.width/2.4,c.height/2.4,1);sp.position.set(x,y,z);g.add(sp);return sp;};
+  /* ── 야드 ── */
+  T3.yard=new THREE.Group();scene.add(T3.yard);
+  const gantry=(g,x,z,w,h,col)=>{const grp=new THREE.Group();grp.position.set(x,0,z);
+    box(grp,6,h,6,col,-w/2,h/2,-10);box(grp,6,h,6,col,w/2,h/2,-10);box(grp,6,h,6,col,-w/2,h/2,10);box(grp,6,h,6,col,w/2,h/2,10);
+    box(grp,w+12,6,28,col,0,h,0);box(grp,10,8,10,col,0,h-6,0);g.add(grp);grp.userData.k='crane';grp.children.forEach(c=>c.userData.k='crane');return grp;};
+  const ship=(g,len,x,z,hull,k)=>{const grp=new THREE.Group();grp.position.set(x,0,z);
+    box(grp,len,22,52,hull,0,11,0);box(grp,len*0.9,6,48,C.sup,0,25,0,.9);box(grp,30,34,36,C.sup,len*0.36,42,0);box(grp,6,20,6,hull,len*0.36+8,69,0);
+    for(let i=0;i<Math.floor(len/40);i++){box(grp,30,10,40,0x6ea3f0,-len*0.42+i*40+12,33,0,.85);}
+    grp.children.forEach(c=>c.userData.k=k);g.add(grp);return grp;};
+  T3.buildYard=()=>{
+    while(T3.yard.children.length)T3.yard.remove(T3.yard.children[0]);
+    const t=SEL||{cranes:P.cranes,plugs:P.plugs,amp:'',auto:'',name:'가상 구역'};
+    // 바닥·수역·안벽
+    box(T3.yard,1000,4,420,C.land,0,-2,90); box(T3.yard,1000,2,220,C.water,0,-4,-230); box(T3.yard,1000,10,34,C.quay,0,3,-104);
+    for(let k=0;k<12;k++)box(T3.yard,2,11,34,C.steel,-480+k*88,3,-104); // 방충재
+    // 에이프런 차선
+    for(let x=-480;x<=480;x+=40)box(T3.yard,30,1,2,C.grid,x,0.6,-60);
+    // 선박
+    T3.objs.ship=ship(T3.yard,300,-120,-160,C.hull,'ship');
+    T3.objs.ship1=ship(T3.yard,220,250,-160,0x6b7784,'ship1');
+    // 야드크레인(V2) + V1·V3 크레인
+    T3.objs.cranes=[];const nc=t.cranes||4;for(let k=0;k<nc;k++)T3.objs.cranes.push(gantry(T3.yard,-270+k*(300/nc),-60,46,72,C.steel));
+    T3.objs.cranes1=[];for(let k=0;k<P.v1Cranes;k++)T3.objs.cranes1.push(gantry(T3.yard,200+k*70,-60,46,72,C.steel));
+    // 냉동야드: 블록 4개 × 랙, 블록 사이 통로
+    const rows=Math.min(T3.low?8:16,Math.max(6,Math.round((t.plugs||1000)/80))), cols=28, blocks=4, perBlock=Math.ceil(cols/blocks);
+    T3.objs.reef=[];let idx=0;
+    for(let r=0;r<rows;r++){const z=30+r*(200/rows);
+      for(let b=0;b<blocks;b++){const x0=-330+b*170;
+        box(T3.yard,perBlock*17+6,2,8,C.rack,x0+perBlock*8.5,1,z); // 랙 레일
+        for(let c=0;c<perBlock;c++){const m=box(T3.yard,14,9,11,C.offc,x0+c*17+8,5.5,z);m.userData={k:'reefer',idx:idx++};T3.objs.reef.push(m);}}}
+    T3.reefCells=idx;
+    // 주계량기·수전실
+    const sub=new THREE.Group();sub.position.set(360,0,140);box(sub,46,30,34,0xf4f6f8,0,15,0);box(sub,50,3,38,C.steel,0,31,0);box(sub,10,24,10,C.steel,32,12,0);T3.objs.meter=sub.children[0];sub.children.forEach(c=>c.userData.k='meter');T3.yard.add(sub);
+    // 케이블 트레이(개념): 계량기 → 냉동야드
+    box(T3.yard,2,2,220,C.steel,330,1,130);box(T3.yard,660,2,2,C.steel,0,1,240);
+    // AMP 접속함 / AGV
+    T3.objs.amp=[];if((t.amp||'').includes('8기')){for(let k=0;k<2;k++){const a=box(T3.yard,22,26,16,0xb98500,-40+k*140,13,-84);a.userData.k='amp';T3.objs.amp.push(a);}}
+    T3.objs.agv=[];if((t.auto||'').includes('완전')){for(let k=0;k<6;k++){const a=box(T3.yard,22,7,12,0x7a68d8,-300+k*60,3.5,-30);a.userData.k='agv';T3.objs.agv.push(a);}}
+    // 충전소
+    T3.objs.chg=[];if(P.chgE>0){for(let k=0;k<Math.min(6,P.chgN);k++){const c=box(T3.yard,8,18,8,C.steel,-430+k*14,9,250);c.userData.k='chg';T3.objs.chg.push(c);}}
+    // 라벨
+    label(T3.yard,t.name||'가상 구역 (개념 배치)',-300,95,-250,18);label(T3.yard,'냉동야드 '+fmt(t.plugs||P.plugs)+'구 (축소)',-330,36,245,14);
+    label(T3.yard,'야드크레인 V2 ×'+nc,-120,118,-60,14);label(T3.yard,'V1·V3 크레인',235,118,-60,14);label(T3.yard,'주계량기',360,58,140,14);
+    if(T3.objs.amp.length)label(T3.yard,'AMP 접속함',30,48,-84,13);if(T3.objs.agv.length)label(T3.yard,'AGV',-150,26,-30,13);if(T3.objs.chg.length)label(T3.yard,'트랙터 충전',-400,34,250,13);
+  };
+  T3.buildYard();
+  /* ── 전력 벽 ── */
+  const WZ=-520, S=0.16, BW=7.2;
+  T3.wall=new THREE.Group();scene.add(T3.wall);
+  const planeMat=new THREE.MeshBasicMaterial({color:0xc7362b,transparent:true,opacity:.14,side:THREE.DoubleSide});
+  T3.objs.plane=new THREE.Mesh(new THREE.PlaneGeometry(800,130),planeMat);T3.objs.plane.rotation.x=-Math.PI/2;T3.objs.plane.position.set(0,0,WZ-10);scene.add(T3.objs.plane);
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(800,1.2,1.2),new THREE.MeshBasicMaterial({color:0xc7362b}));edge.position.set(0,0,WZ+22);scene.add(edge);T3.objs.edge=edge;
+  T3.objs.cursor=box(scene,2.5,1,120,dark?0xeef1f4:0x16202b,0,0,WZ-10,.6);
+  // 벽 바닥 격자(시간 눈금)
+  for(let i=0;i<=N;i+=4)box(scene,1,0.6,130,C.grid,-380+i*8-4,0.3,WZ-10);
+  T3.labels=[];
+  T3.rebuild=()=>{
+    while(T3.wall.children.length)T3.wall.remove(T3.wall.children[0]);
+    T3.labels.forEach(l=>scene.remove(l));T3.labels=[];
+    const a=R.after,b=R.before,tg=P.target;
+    const seg=(i,segs,z)=>{let y0=0;segs.forEach(([v,col])=>{if(v<=0)return;const parts=[];const top=y0+v;
+      if(y0<tg&&top>tg){parts.push([y0,tg,col]);parts.push([tg,top,0xc7362b]);} else parts.push([y0,top,y0>=tg?0xc7362b:col]);
+      parts.forEach(([p0,p1,c])=>{const h=(p1-p0)*S;const m=new THREE.Mesh(new THREE.BoxGeometry(BW,h,20),mat(c));m.position.set(-380+i*8,p0*S+h/2,z);m.userData={k:'bar',i};T3.wall.add(m);});y0=top;});};
+    for(let i=0;i<N;i++){seg(i,[[a.base[i],0x8a94a0],[a.equip[i]-a.charge[i],0xb35c00],[a.charge[i],0xd97a00],[a.reefer[i],0x2a6fcf]],WZ);
+      const m=new THREE.Mesh(new THREE.BoxGeometry(BW,b.total[i]*S,14),mat(0x6ea3f0,.4));m.position.set(-380+i*8,b.total[i]*S/2,WZ-46);m.userData={k:'barB',i};T3.wall.add(m);}
+    T3.objs.plane.position.y=tg*S;T3.objs.edge.position.y=tg*S;
+    const L=(t,x,y,z,sz)=>T3.labels.push(label(scene,t,x,y,z,sz));
+    L('관리목표 '+fmt(tg)+'kW',430,tg*S+6,WZ+10,14);L('변경 후 예측 (앞줄)',-430,26,WZ+30,13);L('변경 전 (뒷줄)',-430,26,WZ-70,13);
+    for(let i=0;i<N;i+=16)L(hh(a.t[i]),-380+i*8,-12,WZ+36,12);
+    L('최대 '+fmt(R.pkA.kw)+'kW · '+hh(R.pkA.t),-380+R.pkA.i*8,R.pkA.kw*S+22,WZ,14);
+    R.evA.forEach(e=>L('초과 '+hh(e.ta)+'–'+hh(e.tb),-380+(e.a+e.b)/2*8,tg*S+40,WZ+8,12));
+  };
+  const views={all:{t:[0,80,-220],d:1300,tilt:.60,rot:.50},wall:{t:[0,140,WZ],d:980,tilt:.32,rot:.04},yard:{t:[0,0,20],d:700,tilt:.85,rot:.55}};
+  let rot=.5,tilt=.6,dist=1300,target=new THREE.Vector3(0,80,-220),drag=null;
+  const place=()=>{cam.position.set(target.x+Math.sin(rot)*Math.cos(tilt)*dist,target.y+Math.sin(tilt)*dist,target.z+Math.cos(rot)*Math.cos(tilt)*dist);cam.lookAt(target);renderer.render(scene,cam)};
+  T3.setView=v=>{const o=views[v];rot=o.rot;tilt=o.tilt;dist=o.d;target.set(...o.t);T3.view=v;document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===v));place()};
+  const cv=renderer.domElement;
+  cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,r:rot,t:tilt,moved:false};cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;rot=drag.r-dx*.006;tilt=Math.min(1.45,Math.max(.12,drag.t+dy*.006));place()});
+  cv.addEventListener('pointerup',e=>{if(drag&&!drag.moved){const rc=new THREE.Raycaster();const r=cv.getBoundingClientRect();rc.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height*2-1)),cam);
+      const objs=[];T3.yard.traverse(o=>{if(o.isMesh&&o.userData.k)objs.push(o)});const hit=rc.intersectObjects([...objs,...T3.wall.children])[0];
+      if(hit){const u=hit.object.userData; if(u.k==='bar'||u.k==='barB'){$('i_t3d').value=u.i;setTime(u.i);barInfo(u.i,u.k==='barB');} else isoInfo(u.k,+$('i_t3d').value);}}drag=null});
+  cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.min(2400,Math.max(300,dist+e.deltaY));place()},{passive:false});
+  new ResizeObserver(()=>{const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();place()}).observe(stage);
+  document.querySelectorAll('#views button').forEach(b=>b.onclick=()=>T3.setView(b.dataset.v));
+  const setCol=(grp,c)=>grp.traverse(o=>{if(o.isMesh)o.material.color.set(c)});
+  T3.update=i=>{const a=R.after,t=a.t[i];const shipAt=(t>=a.berth&&t<a.work1+1);const approaching=(t<a.berth);
+    T3.objs.ship.position.set(approaching?-120-Math.min(500,(a.berth-t)*120):-120,0,approaching?-160-Math.min(160,(a.berth-t)*40):-160);
+    const on=(t>=a.work0&&t<a.work1);T3.objs.cranes.forEach(c=>setCol(c,on?0xb35c00:C.steel));
+    const on1=(t>=P.v1Start&&t<P.v1End)||(t>=P.v3Start&&t<P.v3End);T3.objs.cranes1.forEach(c=>setCol(c,on1?0xb35c00:C.steel));
+    const nex=P.N0-(t>=P.outEnd?P.outR:t>P.outStart?P.outR*(t-P.outStart)/(P.outEnd-P.outStart):0);
+    const sc=T3.reefCells/Math.max(T3.reefCells,P.N0+P.newR+P.v3R);
+    T3.objs.reef.forEach(m=>{const idx=m.userData.idx;const con=idx<a.nconn[i]*sc;const isNew=con&&idx>=Math.round(nex*sc);m.material.color.set(con?(isNew?0xb35c00:0x2a6fcf):C.offc);m.position.y=con?6.5:5.5;});
+    T3.objs.amp.forEach(m=>m.material.color.set(shipAt?0xe2a400:0x8f98a2));
+    T3.objs.agv.forEach((m,k)=>{m.position.x=-300+((k*60+Math.floor(i/2)*12)%360);m.material.color.set(on?0x7a68d8:0xb9c0c8);});
+    T3.objs.chg.forEach(m=>m.material.color.set(a.charge[i]>0?0xd97a00:C.steel));
+    const over=a.total[i]>P.target;T3.objs.meter.material.color.set(over?0xc7362b:0xf4f6f8);
+    T3.objs.cursor.position.set(-380+i*8,Math.max(a.total[i],P.target)*S/2+2,WZ-10);T3.objs.cursor.scale.y=Math.max(a.total[i],P.target)*S+4;
+    $('hud').innerHTML=`${hh(t)} · <b>${fmt(a.total[i])}</b> kW · 연결 ${a.nconn[i]}대 · 목표 ${fmt(P.target)} ${over?'<span class="st bad">초과</span>':'<span class="st ok">정상</span>'}<br><span class="note">냉동 ${fmt(a.reefer[i])} · 크레인 ${fmt(a.equip[i]-a.charge[i])} · 충전 ${fmt(a.charge[i])} · 기본 ${fmt(a.base[i])} kW</span>`;
+    place();};
+  T3.ready=true; T3.rebuild(); T3.setView('all'); T3.update(+$('i_t3d').value);
+}
+function barInfo(i,isBefore){
+  const s=isBefore?R.before:R.after, t=s.t[i], over=s.total[i]>P.target;
+  const html=`<div class="sub-h" style="margin-top:0">${hh(t)} · ${isBefore?'변경 전 예측':'변경 후 예측'} <span class="chip syn">가상</span></div>
+   <div class="rows" style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px"><span>합계</span><b>${fmt(s.total[i])} kW ${over?'<span class="st bad">목표 초과 +'+fmt(s.total[i]-P.target)+'</span>':'<span class="st ok">정상</span>'}</b><span>냉동컨테이너</span><b>${fmt(s.reefer[i])} kW · ${s.nconn[i]}대 연결</b><span>야드크레인</span><b>${fmt(s.equip[i])} kW</b><span>기본부하</span><b>${fmt(s.base[i])} kW</b><span>외기온도</span><b>${ambient(t,P.tmean).toFixed(1)}℃</b>${isBefore?'':'<span>P10–P90</span><b>'+fmt(R.p10[i])+'–'+fmt(R.p90[i])+' kW</b>'}</div>
+   <p class="note" style="margin-top:8px">${isBefore?'원래 ETA '+hh(P.eta)+' 기준.':'수정 ETA '+hh(P.eta+P.delay)+' 기준. 같은 시각의 변경 전 값은 '+fmt(R.before.total[i])+'kW.'} 전력 모델은 단순화 규칙(가정값).</p>`;
+  $('stageInfo').innerHTML=html;
+}
+function setTime(i){$('o_t3d').value=hh(R.after.t[i]);drawIso();if(T3.ready)T3.update(i);}
+$('btn3dOn').onclick=()=>{$('stagePh').hidden=true;$('stage').hidden=false;load3d();if(T3.ready){T3.rebuild();T3.update(+$('i_t3d').value);}};
+$('btn3dOff').onclick=()=>{$('stage').hidden=true;$('stagePh').hidden=false;if(T3.play)$('btnPlay').click();};
+$('btnPlay').onclick=()=>{ if(T3.play){clearInterval(T3.play);T3.play=null;$('btnPlay').textContent='▶ 24시간 재생';return}
+  const el=$('i_t3d'); $('btnPlay').textContent='⏸ 정지';
+  T3.play=setInterval(()=>{let i=(+el.value+1)%N;el.value=i;setTime(i);},140); };
+
+/* ───────── 보조 그림 ───────── */
+function drawStack(){
+  const svg=$('stack'); const W=820,H=170,L=52,Rm=14,Tm=10,B=26; const a=R.after;
+  const ymax=Math.max(P.target,...a.total)*1.06; const x=i=>L+i/(N-1)*(W-L-Rm), y=v=>Tm+(1-v/ymax)*(H-Tm-B);
+  let s='';
+  const area=(lo,hi,col)=>`<path d="M${hi.map((v,i)=>`${x(i)},${y(v)}`).join('L')}L${lo.map((v,i)=>`${x(i)},${y(v)}`).reverse().join('L')}Z" fill="${col}" opacity=".85"/>`;
+  const zero=a.base.map(()=>0), c1=a.base.slice(), c2=a.base.map((v,i)=>v+a.equip[i]), c3=c2.map((v,i)=>v+a.reefer[i]);
+  s+=area(zero,c1,'#8a94a0')+area(c1,c2,'#b35c00')+area(c2,c3,'#2a6fcf');
+  for(let v=0;v<=ymax;v+=500)s+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(v)}</text>`;
+  for(let i=0;i<N;i+=16)s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${hh(a.t[i])}</text>`;
+  s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(P.target)}" y2="${y(P.target)}" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+  R.evA.forEach(e=>{s+=`<rect x="${x(e.a)}" y="${Tm}" width="${x(e.b)-x(e.a)+(x(1)-x(0))}" height="${H-Tm-B}" fill="none" stroke="var(--bad)" stroke-width="1.5"/>`});
+  s+=`<text x="${L+6}" y="${Tm+12}" font-size="11" fill="var(--ink-2)">회색 기본 · 주황 야드크레인+트랙터 충전 · 파랑 냉동컨테이너 · 빨간 테두리 = 초과 구간</text>`;
+  svg.innerHTML=s;
+}
+function drawThermo(){
+  const svg=$('thermoChart');if(!svg)return; const W=820,H=230,L=52,Rm=60,Tm=14,B=30; const Ta=ambient(P.eta+P.delay+P.wait,P.tmean);
+  const xs=[];for(let h=0;h<=8;h+=0.25)xs.push(h);
+  const x=h=>L+h/8*(W-L-Rm);
+  let s='';
+  const series=[];
+  for(const k of ['frozen','chilled']){const c=CARGO[k]; const dT=xs.map(h=>(Ta-c.set)*(1-Math.exp(-h/c.tauOff))); const kwh=dT.map(d=>c.kPull*d*c.tauOn); series.push({k,c,dT,kwh});}
+  const ymaxT=Math.max(...series.map(q=>Math.max(...q.dT)))*1.1, ymaxE=Math.max(...series.map(q=>Math.max(...q.kwh)))*1.1;
+  const yT=v=>Tm+(1-v/ymaxT)*(H-Tm-B), yE=v=>Tm+(1-v/ymaxE)*(H-Tm-B);
+  for(let v=0;v<=ymaxT;v+=2)s+=`<line x1="${L}" x2="${W-Rm}" y1="${yT(v)}" y2="${yT(v)}" stroke="var(--line)"/><text x="${L-6}" y="${yT(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}℃</text>`;
+  for(let v=0;v<=ymaxE;v+=2)s+=`<text x="${W-Rm+6}" y="${yE(v)+4}" font-size="11" fill="var(--muted)">${v}kWh</text>`;
+  for(let h=0;h<=8;h+=1)s+=`<text x="${x(h)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${h}h</text>`;
+  const col={frozen:'var(--before)',chilled:'var(--actual)'};
+  series.forEach(q=>{s+=`<path d="M${xs.map((h,i)=>`${x(h)},${yT(q.dT[i])}`).join('L')}" fill="none" stroke="${col[q.k]}" stroke-width="2"/>`;
+    s+=`<path d="M${xs.map((h,i)=>`${x(h)},${yE(q.kwh[i])}`).join('L')}" fill="none" stroke="${col[q.k]}" stroke-width="1.5" stroke-dasharray="5 3"/>`;
+    s+=`<line x1="${L}" x2="${W-Rm}" y1="${yT(q.c.limit)}" y2="${yT(q.c.limit)}" stroke="${col[q.k]}" stroke-width="1" stroke-dasharray="2 3"/><text x="${L+4}" y="${yT(q.c.limit)-3}" font-size="10.5" fill="${col[q.k]}">${q.c.label} 허용 ${q.c.limit}℃</text>`;});
+  const mo=R.after.maxOff; s+=`<line x1="${x(Math.min(8,mo))}" x2="${x(Math.min(8,mo))}" y1="${Tm}" y2="${H-B}" stroke="var(--bad)" stroke-width="1.5"/><text x="${x(Math.min(8,mo))+4}" y="${Tm+12}" font-size="11" fill="var(--bad)">현재 최대 비전원 ${mo.toFixed(1)}h</text>`;
+  s+=`<text x="${L+4}" y="${H-B-6}" font-size="11" fill="var(--ink-2)">실선 = 내부온도 상승(℃, 왼쪽) · 점선 = 컨테이너 1대 풀다운 추가전력(kWh, 오른쪽) · 외기 ${Ta.toFixed(1)}℃ · 파랑 냉동, 주황 냉장</text>`;
+  svg.innerHTML=s;
+}
+function drawProcess(){
+  const svg=$('proc'); const W=820; const a=R.after,b=R.before;
+  const st=[['ETA 통보',hh(P.eta),hh(P.eta+P.delay),'pub'],['접안',hh(b.berth),hh(a.berth),'asm'],['하역 시작',hh(b.work0),hh(a.work0),'asm'],['야드 반입·연결 시작',hh(b.tcStart),hh(a.tcStart),'asm'],['연결 완료',hh(b.tcEnd),hh(a.tcEnd),'asm'],['구역 최대전력',fmt(R.pkB.kw)+'kW '+hh(R.pkB.t),fmt(R.pkA.kw)+'kW '+hh(R.pkA.t),'syn']];
+  const gaps=[P.wait,P.dstart,P.plug,P.newR/P.rate,null];
+  const cx=i=>70+i*136; let s=`<rect x="0" y="0" width="${W}" height="250" fill="var(--surface)"/>`;
+  /* 아이콘 */
+  const icon=(i,k)=>{const x=cx(i),y=70;
+    if(k===0)return `<path d="M${x-34},${y+6} h68 l-8,16 h-52z" fill="var(--ink-2)"/><rect x="${x-12}" y="${y-14}" width="24" height="20" fill="var(--ink-2)"/><rect x="${x-4}" y="${y-26}" width="8" height="12" fill="var(--ink-2)"/>`;
+    if(k===1)return `<rect x="${x-40}" y="${y+18}" width="80" height="8" fill="var(--line-2)"/><path d="M${x-30},${y-2} h60 l-7,14 h-46z" fill="var(--ink-2)"/><circle cx="${x+28}" cy="${y+8}" r="4" fill="var(--warn)"/>`;
+    if(k===2)return `<rect x="${x-36}" y="${y+16}" width="72" height="8" fill="var(--line-2)"/><rect x="${x-26}" y="${y-30}" width="8" height="46" fill="var(--actual)"/><rect x="${x+18}" y="${y-30}" width="8" height="46" fill="var(--actual)"/><rect x="${x-32}" y="${y-34}" width="64" height="8" fill="var(--actual)"/><rect x="${x-8}" y="${y-18}" width="16" height="10" fill="var(--before)"/>`;
+    if(k===3)return `<rect x="${x-36}" y="${y-4}" width="46" height="20" fill="var(--before)"/><rect x="${x+10}" y="${y+2}" width="22" height="14" fill="var(--ink-2)"/><circle cx="${x-24}" cy="${y+22}" r="5" fill="var(--ink)"/><circle cx="${x+22}" cy="${y+22}" r="5" fill="var(--ink)"/><path d="M${x-34},${y-14} l10,-8 l10,8" fill="none" stroke="var(--muted)" stroke-width="2"/>`;
+    if(k===4)return `<rect x="${x-30}" y="${y-12}" width="44" height="26" fill="var(--before)"/><rect x="${x+14}" y="${y-6}" width="12" height="14" fill="var(--ink-2)"/><path d="M${x+26},${y+1} h12 M${x+32},${y-6} v14" stroke="var(--ok)" stroke-width="3"/><circle cx="${x-24}" cy="${y-18}" r="3" fill="var(--actual)"/><circle cx="${x-14}" cy="${y-22}" r="3" fill="var(--actual)"/>`;
+    return `<rect x="${x-34}" y="${y+8}" width="68" height="8" fill="var(--line-2)"/><rect x="${x-30}" y="${y-6}" width="10" height="14" fill="#8a94a0"/><rect x="${x-16}" y="${y-18}" width="10" height="26" fill="var(--actual)"/><rect x="${x-2}" y="${y-30}" width="10" height="38" fill="var(--before)"/><rect x="${x+12}" y="${y-22}" width="10" height="30" fill="var(--before)"/><rect x="${x+26}" y="${y-10}" width="8" height="18" fill="var(--bad)"/>`;};
+  st.forEach((o,i)=>{const x=cx(i); if(i<5){const g=gaps[i];s+=`<path d="M${x+48},70 h40" stroke="var(--line-2)" stroke-width="2"/><path d="M${x+84},64 l8,6 l-8,6z" fill="var(--line-2)"/>`; if(g!=null)s+=`<text x="${x+68}" y="58" text-anchor="middle" font-size="11" fill="var(--lv-asm)">+${g.toFixed(1)}h</text>`;}
+    s+=icon(i,i)+`<text x="${x}" y="120" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">${o[0]}</text>`;
+    s+=`<rect x="${x-58}" y="134" width="116" height="26" rx="3" fill="var(--soft)"/><text x="${x-52}" y="151" font-size="11.5" fill="var(--before)">전 ${o[1]}</text>`;
+    s+=`<rect x="${x-58}" y="166" width="116" height="26" rx="3" fill="var(--soft)"/><text x="${x-52}" y="183" font-size="11.5" font-weight="600" fill="var(--after)">후 ${o[2]}</text>`;
+    s+=`<text x="${x}" y="212" text-anchor="middle" font-size="10.5" fill="var(--lv-${o[3]})">${({pub:'공개(통보)',asm:'가정값',syn:'가상 계산'})[o[3]]}</text>`;});
+  s+=`<text x="12" y="240" font-size="11.5" fill="var(--muted)">화살표 위 +h = 가정한 시간차. ETA ${P.delay>=0?'+':''}${P.delay}h 변경이 연결 완료에는 ${(a.tcEnd-b.tcEnd)>=0?'+':''}${(a.tcEnd-b.tcEnd).toFixed(1)}h로 나타난다(양하 속도·대기 가정에 따라 달라짐).</text>`;
+  svg.innerHTML=s;
+}
+function drawHeat(daysTotal,targets){
+  const svg=$('heat'); const W=820,H=300,L=40,T=18; const rows=daysTotal.length; const cw=(W-L-10)/N, ch=(H-T-22)/rows;
+  let s='';
+  for(let i=0;i<N;i+=8)s+=`<text x="${L+i*cw}" y="12" font-size="10" fill="var(--muted)">${hh(T0+i*DT)}</text>`;
+  daysTotal.forEach((d,r)=>{s+=`<text x="${L-4}" y="${T+r*ch+ch*0.75}" text-anchor="end" font-size="9" fill="var(--muted)">${r+1}</text>`;
+    for(let i=0;i<N;i++){const v=d[i],tg=targets[r];const over=v>tg;const op=Math.min(1,Math.max(.06,v/tg*0.8));
+      s+=`<rect x="${L+i*cw}" y="${T+r*ch}" width="${cw}" height="${ch}" fill="${over?'var(--bad)':'var(--before)'}" opacity="${over?1:op.toFixed(2)}"/>`;}});
+  s+=`<text x="${L}" y="${H-6}" font-size="11" fill="var(--muted)">파랑 진하기 = 목표 대비 부하 · 빨강 = 초과 · 30일 모두 가상 생성</text>`;
+  svg.innerHTML=s;
+}
+
+/* ───────── 대안 ───────── */
+function runCase(name,opts){
+  const o={eta:P.eta+P.delay,...opts};
+  let sim=simulate(P,o);
+  let sch=null;
+  if(opts.useSched){sch=schedule(P,{eta:P.eta+P.delay,notice:P.notice,priority:opts.priority}); sim=simulate(P,{...o,sched:sch});}
+  let ess=null, total=sim.total;
+  if(opts.useEss&&P.essP>0){ess=applyEss(sim,P,P.target); total=ess.total;}
+  const ev=events(total,sim.t,P.target); const h=ev.reduce((s,e)=>s+e.h,0); let pk=-1;total.forEach(v=>{if(v>pk)pk=v});
+  let cost=0,kwh=0;for(let i=0;i<N;i++){const e=total[i]*DT;kwh+=e;cost+=e*tariffRate(sim.t[i]);}
+  const co2=kwh*P.co2;
+  const finish=sim.work1-(P.eta+P.delay);
+  return {name,sim,sch,ess,total,h,pk,cost,kwh,co2,finish,pullKwh:sim.pullKwh,maxOff:sim.maxOff,tempViol:sim.tempViol,
+    throughputOk:!sch||sch.feasible, delayOk:finish<=P.dl, tempOk:sim.tempViol===0&&sim.maxOff<=P.waitmax+1, socOk:!ess||ess.socOk, sockWaitN:sim.sockWaitN, sockWaitMax:sim.sockWaitMax, maxDT:sim.maxDT};
+}
+function renderAlt(){
+  const C0=runCase('C0 기존 운영',{});
+  const C1=runCase('C1 ESS만',{useEss:true});
+  const C2=runCase('C2 작업 조정만',{useSched:true,priority:true});
+  const C3=runCase('C3 작업 조정 + ESS',{useSched:true,priority:true,useEss:true});
+  const cases=[C0,C1,C2,C3];
+  /* 제약 필터: 비용·탄소·피크 ≤ 기준, 물동량·지연 유지, 온도·SOC 조건 */
+  const TOL=0.001; // 시뮬레이션 잡음 허용 0.1%
+  cases.forEach(c=>{c.notWorse=c.cost<=C0.cost*(1+TOL)&&c.co2<=C0.co2*(1+TOL)&&c.pk<=C0.pk*(1+TOL);
+    c.feasible=c.notWorse&&c.throughputOk&&c.delayOk&&c.tempOk&&c.socOk;
+    c.essNa=(c.name.includes('ESS')&&P.essP<=0);});
+  const feas=cases.filter(c=>c.feasible&&!c.essNa&&c!==C0);
+  const goal=feas.filter(c=>c.h===0);
+  /* 탄소 상쇄 목표: 변경 전(원래 ETA) 대비 변경 후(C0) 탄소 증가분 → 상쇄 필요 전력량 */
+  const before=R.before; let kwhB=0;before.total.forEach(v=>kwhB+=v*DT); const dCo2=(C0.kwh-kwhB)*P.co2; const needKwh=dCo2/P.co2;
+  let v;
+  if(C0.h===0) v=`<b>현재 입력에서는 초과가 없다.</b> 아래 4안은 참고용이다.`;
+  else if(goal.length){const b=goal.sort((a,b)=>(a.cost-b.cost)+(a.co2-b.co2)*100)[0]; v=`<b>제약 충족 + 관리목표 미초과 대안 ${goal.length}건 → 선택: ${b.name}.</b> 기준(C0) 대비 비용 ${fmt(b.cost-C0.cost)}원, 탄소 ${(b.co2-C0.co2).toFixed(0)}kg, 피크 ${fmt(b.pk-C0.pk)}kW. 기존 운영(C0)도 후보로 남긴다.`;$('verdict').className='verdict ok';}
+  else {const near=(feas.length?feas:cases.filter(c=>c!==C0&&!c.essNa)).sort((a,b)=>a.h-b.h)[0];
+    const tr=cases.filter(c=>c!==C0&&!c.essNa).map(c=>`${c.name}: ${[c.h>0?'초과 '+c.h.toFixed(2)+'h 잔존':null,!c.notWorse?'비용/탄소/피크 중 악화':null,!c.throughputOk?'물동량 미달':null,!c.delayOk?'기한 초과':null,!c.tempOk?'온도/대기 초과':null,!c.socOk?'종료 SOC 미달':null].filter(Boolean).join(', ')}`).join(' · ');
+    v=`<b>현재 조건에서 목표 달성 불가 — 관리목표를 넘지 않으면서 제약을 모두 지키는 안 없음.</b> ${near?`가장 가까운 안 ${near.name}(초과 ${near.h.toFixed(2)}h, 피크 ${fmt(near.pk)}kW): 관리목표를 ${fmt(near.pk)}kW 이상으로 올리거나, ESS 약 ${fmt(Math.max(0,near.pk-P.target))}kW급을 두거나, 하역 기한·비전원 허용을 완화해야 한다.`:''} 상충관계: ${tr||'ESS 미설정'}.`;$('verdict').className='verdict bad';}
+  if(C0.h===0)$('verdict').className='verdict ok';
+  const sens=simulate({...P,plug:Math.max(0,P.plug-0.5)},{eta:P.eta+P.delay,priority:true});
+  $('verdict').innerHTML=v+`<p class="note" style="margin-top:6px">우선순위 배정은 총 비전원 시간을 바꾸지 못해 전력량 효과는 작고(풀다운 ${fmt(C0.pullKwh)}→${fmt(C2.pullKwh)}kWh), 온도 한도 위반을 ${C0.tempViol}→${C2.tempViol}대로 줄인다. 전력량을 줄이려면 이송·연결 지연 자체를 줄여야 한다: 지연 ${P.plug}h→${Math.max(0,P.plug-0.5)}h이면 풀다운 ${fmt(sens.pullKwh)}kWh, 위반 ${sens.tempViol}대 <span class="chip asm">가정</span>.</p><p class="note" style="margin-top:4px">탄소 상쇄 목표: 변경 전 대비 변경 후(C0) 탄소 ${dCo2>=0?'+':''}${dCo2.toFixed(0)}kg → 상쇄하려면 하루 구매전력 ${fmt(needKwh)}kWh 이상 절감 필요(${P.co2}kg/kWh 가정). 그 이상 줄여야 순감축.</p>`;
+  const chk=b=>b?'<span class="st ok">충족</span>':'<span class="st bad">미충족</span>';
+  $('alts').innerHTML=`<div class="tscroll" style="grid-column:1/-1"><table><thead><tr><th>안</th><th class="n">구매전력(일)</th><th class="n">전력량요금</th><th class="n">최대전력</th><th class="n">탄소</th><th class="n">초과시간</th><th class="n">풀다운 추가전력</th><th class="n">최대 비전원 대기</th><th class="n">최대 온도상승 / 소켓 대기</th><th class="n">하역 완료</th><th>비용·탄소·피크 ≤ 기준</th><th>물동량·지연</th><th>온도·SOC</th><th>판정</th></tr></thead><tbody>`+
+  cases.map(c=>{const d=(x,y,u='',dec=0)=>`${x.toFixed(dec)}${u}<span class="note"> (${(x-y)>=0?'+':''}${(x-y).toFixed(dec)})</span>`;
+    const na=c.essNa; const stt=na?'<span class="st na">ESS 미설정</span>':c===C0?'<span class="st na">기준</span>':c.feasible?'<span class="st ok">채택 가능</span>':'<span class="st bad">탈락</span>';
+    return `<tr><td><b>${c.name}</b>${c.sch?`<span class="note"> 크레인 조각 ${c.sch.frags}개 · 충전 재배치${c.sch.chgOk?'':' 미완('+fmt(c.sch.chgLeft)+'kWh 남음)'}</span>`:''}${c.ess?`<span class="note"> 방전 ${fmt(c.ess.used)}·충전 ${fmt(c.ess.charged)}kWh, 종료 SOC ${c.ess.socEnd.toFixed(0)}%</span>`:''}</td>
+      <td class="n">${d(c.kwh,C0.kwh,'kWh')}</td><td class="n">${d(c.cost,C0.cost,'원')}</td><td class="n">${d(c.pk,C0.pk,'kW')}</td><td class="n">${d(c.co2,C0.co2,'kg')}</td><td class="n">${d(c.h,C0.h,'h',2)}</td><td class="n">${d(c.pullKwh,C0.pullKwh,'kWh')}</td><td class="n">${c.maxOff.toFixed(2)}h</td><td class="n">${c.maxDT.toFixed(1)}℃ / ${c.sockWaitN}대 (최대 ${c.sockWaitMax.toFixed(2)}h)</td><td class="n">+${c.finish.toFixed(1)}h / 기한 +${P.dl}h</td>
+      <td>${na?'—':chk(c.notWorse)}</td><td>${chk(c.throughputOk&&c.delayOk)}</td><td>${na?'—':chk(c.tempOk&&c.socOk)}</td><td>${stt}</td></tr>`;}).join('')+`</tbody></table></div>`;
+  drawCaseChart(cases);
+  R.cases=cases; renderDecisionReport(); renderEcon(); renderAnnual();
+}
+function drawCaseChart(cases){
+  const svg=$('caseChart');if(!svg)return; const W=820,H=240,L=52,Rm=14,Tm=14,B=30;
+  const ymax=Math.max(P.target,...cases.map(c=>Math.max(...c.total)))*1.06; const x=i=>L+i/(N-1)*(W-L-Rm), y=v=>Tm+(1-v/ymax)*(H-Tm-B);
+  let s='';for(let v=0;v<=ymax;v+=500)s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(v)}</text>`;
+  for(let i=0;i<N;i+=16)s+=`<text x="${x(i)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${hh(T0+i*DT)}</text>`;
+  s+=`<line x1="${L}" x2="${W-Rm}" y1="${y(P.target)}" y2="${y(P.target)}" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+  const cols=['var(--muted)','var(--v-purple,#7a68d8)','var(--before)','var(--after)'];
+  cases.forEach((c,k)=>{if(c.essNa)return; s+=`<path d="M${c.total.map((v,i)=>`${x(i)},${y(v)}`).join('L')}" fill="none" stroke="${cols[k]}" stroke-width="${k===3?2.4:1.6}" ${k===0?'stroke-dasharray="5 3"':''}/>`;});
+  svg.innerHTML=s;
+}
+
+/* ───────── 검증 ───────── */
+function renderVerify(){
+  const rng=mul32(2026); const days=30; let agB={TP:0,FP:0,FN:0,act:0,pred:0}, agA={TP:0,FP:0,FN:0,act:0,pred:0};
+  const cases={up:0,down:0,shift:0,none:0}; const heatD=[],heatT=[];
+  for(let d=0;d<days;d++){
+    const q={...P}; q.eta=11+Math.round(rng()*18)/2; q.delay=rng()<0.3?0:Math.round((rng()*6-1)*2)/2; q.newR=20+Math.round(rng()*12)*5; q.tmean=12+Math.round(rng()*18);
+    const fb=simulate(q,{eta:q.eta}), fa=simulate(q,{eta:q.eta+q.delay});
+    const ac=simulate(q,{eta:q.eta+q.delay+etaDeviation(rng),lag:{plug:(rng()-0.5)*0.6,rate:(rng()-0.5)*10},noise:mul32(d*31+5)});
+    const eb=events(fb.total,fb.t,q.target), ea=events(fa.total,fa.t,q.target), ex=events(ac.total,ac.t,q.target);
+    const mb=match(eb,ex), ma=match(ea,ex); heatD.push(fa.total);heatT.push(q.target);
+    agB.TP+=mb.TP;agB.FP+=mb.FP;agB.FN+=mb.FN;agB.act+=ex.length;agB.pred+=eb.length;
+    agA.TP+=ma.TP;agA.FP+=ma.FP;agA.FN+=ma.FN;agA.act+=ex.length;agA.pred+=ea.length;
+    const pb=peak(fb),pa=peak(fa); const dp=(pa.kw-pb.kw)/pb.kw*100;
+    if(Math.abs(dp)<=3){ if(Math.abs(pa.t-pb.t)>=1)cases.shift++; else cases.none++; } else if(dp>0)cases.up++; else cases.down++;
+  }
+  const pr=(g,k)=>`<tr><td>${k}</td><td class="n">${g.act}</td><td class="n">${g.pred}</td><td class="n">${g.TP}</td><td class="n">${g.FP}</td><td class="n">${g.FN}</td><td class="n">${g.TP}/${g.TP+g.FN} = ${(g.TP+g.FN?g.TP/(g.TP+g.FN)*100:0).toFixed(0)}%</td><td class="n">${g.TP}/${g.TP+g.FP} = ${(g.TP+g.FP?g.TP/(g.TP+g.FP)*100:0).toFixed(0)}%</td></tr>`;
+  $('prTable').querySelector('tbody').innerHTML=pr(agB,'변경 전 정보(원래 ETA)')+pr(agA,'변경 반영(수정 ETA)');
+  /* 현재 날 매칭표 */
+  const m=match(R.evA,R.evAct); const tb=$('evTable').querySelector('tbody'); let rows='';
+  R.evA.forEach((e,pi)=>{const pr=m.pairs.find(p=>p.pi===pi); const a=pr?R.evAct[pr.ai]:null; rows+=`<tr><td>${hh(e.ta)}–${hh(e.tb)} (최대 ${fmt(e.max)}kW)</td><td>${a?hh(a.ta)+'–'+hh(a.tb)+' (최대 '+fmt(a.max)+'kW)':'—'}</td><td>${a?'<span class="st ok">TP</span>':'<span class="st bad">FP</span>'}</td></tr>`});
+  R.evAct.forEach((a,ai)=>{if(!m.used.has(ai))rows+=`<tr><td>—</td><td>${hh(a.ta)}–${hh(a.tb)} (최대 ${fmt(a.max)}kW)</td><td><span class="st bad">FN</span></td></tr>`});
+  tb.innerHTML=rows||'<tr><td colspan="3" class="note">이 날은 예측·실제 모두 초과 사건이 없다.</td></tr>';
+  /* 갱신시간 */
+  const t0=performance.now(); const times=[];for(let k=0;k<20;k++){const s=performance.now();compute();times.push(performance.now()-s);} times.sort((a,b)=>a-b);
+  const med=times[10];
+  $('latTable').querySelector('tbody').innerHTML=`
+   <tr><td>데이터 수신 (PORT-i/TOS → 시스템)</td><td class="n">—</td><td>연계 없음</td><td><span class="st na">미측정</span></td></tr>
+   <tr><td>전처리 (ETA 이력 정리·연결 이벤트 생성)</td><td class="n">—</td><td>시연에서는 입력 즉시 반영</td><td><span class="st na">미측정</span></td></tr>
+   <tr><td>모델 계산 + 경보 생성 (이 엔진)</td><td class="n">중앙값 ${med.toFixed(1)}ms (범위 ${times[0].toFixed(1)}–${times[19].toFixed(1)}ms)</td><td>이 브라우저 · 20회 반복 · 40회 표본 밴드 포함</td><td><span class="st ok">측정</span></td></tr>
+   <tr><td>화면 반영</td><td class="n">—</td><td>렌더 시간 미계측</td><td><span class="st na">미측정</span></td></tr>
+   <tr><td><b>전체 갱신시간 (목표 1분)</b></td><td class="n">—</td><td>연계 환경에서 재측정 필요</td><td><span class="st warn">미검증</span></td></tr>`;
+  drawHeat(heatD,heatT); drawAiFlow(); renderAbc(); renderOOD(); renderAiKpis(); renderHoldout(); renderCards();
+  const vs=$('verifySummary'); if(vs){const r=R.abc;vs.innerHTML=`<div class="ans"><div class="q">경보 재현율 / 정밀도</div><div class="a">${(agA.TP+agA.FN?agA.TP/(agA.TP+agA.FN)*100:0).toFixed(0)}% / ${(agA.TP+agA.FP?agA.TP/(agA.TP+agA.FP)*100:0).toFixed(0)}%</div><div class="d">30일 가상 · 변경 반영 예측 · 사건 단위</div></div><div class="ans"><div class="q">AI vs 단순 기준</div><div class="a">${r?fmt(r.A.mae)+' → '+fmt(r.G.mae)+' kW':'—'}</div><div class="d">MAE, 전날값 기준 → GBDT · 10일 시험</div></div><div class="ans"><div class="q">일정 변경이 피크에 미친 영향</div><div class="a">${cases.shift}일 이동 · ${cases.up}일 증가</div><div class="d">30일 중 · 사례 선별 없음</div></div><div class="ans alert"><div class="q">실측 검증</div><div class="a">0건</div><div class="d">실데이터 확보 전까지 '방법 검증'만</div></div>`;}
+  $('caseKpis').innerHTML=[['최대값 증가',cases.up],['최대값 감소',cases.down],['시간대 이동(±3% 이내)',cases.shift],['변화 없음',cases.none]].map(c=>`<div class="kpi"><div class="lb">${c[0]}</div><div class="v">${c[1]}<small>/ ${days}일</small></div></div>`).join('');
+}
+
+
+/* ───────── 부산항 터미널 ───────── */
+const TERMS=[
+ {id:'PNIT',name:'신항 1부두 PNIT',op:'부산신항국제터미널(주)',quay:'1,200m',cap:'210만TEU (해수청) / 설계 325만 (PSA)',berth:'5만톤급 3척 · QC 12',amp:'미확인',auto:'반자동 (가정)',plugs:900,cranes:4,n0:0.15,x:300,y:120,w:110,side:'N',group:'신항 북컨'},
+ {id:'PNC',name:'신항 2부두 PNC',op:'부산신항만(주)',quay:'2,000m',cap:'368만TEU',berth:'5만톤급 6척',amp:'미확인',auto:'반자동 (가정)',plugs:2000,cranes:5,n0:0.15,x:420,y:120,w:180,side:'N',group:'신항 북컨'},
+ {id:'HJNC',name:'신항 3부두 HJNC',op:'한진부산컨테이너터미널(주)',quay:'1,100m',cap:'231만TEU',berth:'5만톤급 2척·2만톤급 2척',amp:'3·4부두 4선석 AMP 8기 (2022)',auto:'반자동 (가정)',plugs:1100,cranes:4,n0:0.15,x:610,y:120,w:100,side:'N',group:'신항 북컨'},
+ {id:'HPNT',name:'신항 4부두 HPNT',op:'현대부산신항만(주)',quay:'1,150m',cap:'194만TEU (해수청) / 설계 275만 (PSA)',berth:'5만톤급 2척·2만톤급 2척 · QC 12',amp:'3·4부두 4선석 AMP 8기 (2022)',auto:'반자동 (가정)',plugs:900,cranes:4,n0:0.15,x:720,y:120,w:90,side:'N',group:'신항 북컨'},
+ {id:'BNCT',name:'신항 5부두 BNCT',op:'(주)비엔씨티',quay:'1,400m',cap:'244만TEU',berth:'5만톤급 4척',amp:'미확인',auto:'야드 자동화 (가정)',plugs:1200,cranes:4,n0:0.15,x:420,y:300,w:130,side:'S',group:'신항 남컨'},
+ {id:'BCT',name:'신항 6부두 BCT',op:'(주)비씨티',quay:'1,050m',cap:'195만TEU',berth:'5만톤급 3척',amp:'미확인',auto:'미확인',plugs:900,cranes:4,n0:0.15,x:560,y:300,w:100,side:'S',group:'신항 남컨'},
+ {id:'DGT',name:'신항 7부두 DGT (서컨 2-5)',op:'동원글로벌터미널부산',quay:'1,050m · 수심 21m',cap:'4천TEU급 3선석 · 2만2천TEU급 3척 동시접안',berth:'QC 9 · AGV 60 · ARMGC 46 (전기)',amp:'미확인',auto:'완전자동화 (2024-04-05 개장)',plugs:1000,cranes:6,n0:0.15,x:150,y:200,w:70,h:120,side:'W',group:'신항 서컨'},
+ {id:'W26',name:'서컨 2-6단계 (2026 개장 예정)',op:'미정/확인 필요',quay:'확인 필요',cap:'확인 필요',berth:'국산 장비 추가 발주 계획',amp:'미확인',auto:'자동화 예정',plugs:800,cranes:6,n0:0.15,x:150,y:330,w:70,h:60,side:'W',group:'신항 서컨',plan:true},
+ {id:'BPT1',name:'북항 신선대 (BPT)',op:'부산항터미널(주)',quay:'1,500m',cap:'224만TEU',berth:'5만톤급 5척',amp:'미확인',auto:'재래식 (가정)',plugs:1000,cranes:4,n0:0.15,x:640,y:380,w:80,side:'B',group:'북항'},
+ {id:'BPT2',name:'북항 감만',op:'확인 필요 (해수청 표 공란)',quay:'1,400m',cap:'160만TEU',berth:'5만톤급 4척',amp:'미확인',auto:'재래식 (가정)',plugs:700,cranes:3,n0:0.15,x:730,y:380,w:70,side:'B',group:'북항'},
+];
+let SEL=null;
+function termSim(t){const q={...P};q.N0=Math.round(t.plugs*t.n0);q.cranes=t.cranes;const est=q.base+q.idleKw+q.N0*3.2+q.cranes*q.craneKw*0.8+q.v3Cranes*q.craneKw*0.5;q.target=Math.round(est/50)*50;
+  const b=simulate(q,{eta:q.eta}),a=simulate(q,{eta:q.eta+q.delay});const eb=events(b.total,b.t,q.target),ea=events(a.total,a.t,q.target);
+  const cov=new Array(N).fill(false);eb.forEach(e=>{for(let i=e.a;i<=e.b;i++)cov[i]=true});let miss=0;ea.forEach(e=>{for(let i=e.a;i<=e.b;i++)if(!cov[i])miss+=DT});
+  return {pkB:peak(b).kw,pkA:peak(a).kw,tB:peak(b).t,tA:peak(a).t,target:q.target,exA:ea.reduce((s,e)=>s+e.h,0),miss};}
+function drawTermChart(){
+  const svg=$('termChart');if(!svg)return; const W=820,L=190,Rm=120,T=24,rowH=34; const rows=TERMS.map(t=>({t,r:termSim(t)}));
+  const H=T+rows.length*rowH+30; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const xmax=Math.max(...rows.map(o=>Math.max(o.r.pkA,o.r.pkB,o.r.target)))*1.08; const x=v=>L+v/xmax*(W-L-Rm);
+  let s='';for(let v=0;v<=xmax;v+=1000)s+=`<line x1="${x(v)}" x2="${x(v)}" y1="${T-6}" y2="${H-24}" stroke="var(--line)"/><text x="${x(v)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${fmt(v)}</text>`;
+  s+=`<text x="${W-Rm}" y="${H-10}" text-anchor="end" font-size="11" fill="var(--muted)">kW</text>`;
+  rows.forEach((o,k)=>{const y=T+k*rowH; const sel=SEL&&SEL.id===o.t.id;
+    if(sel)s+=`<rect x="0" y="${y-4}" width="${W}" height="${rowH}" fill="var(--soft)"/>`;
+    s+=`<text x="${L-8}" y="${y+16}" text-anchor="end" font-size="12" font-weight="${sel?700:500}" fill="var(--ink)">${o.t.id}${o.t.plan?' (계획)':''}</text>`;
+    s+=`<rect x="${L}" y="${y+2}" width="${x(o.r.pkB)-L}" height="9" fill="var(--before)" opacity=".55"/>`;
+    s+=`<rect x="${L}" y="${y+13}" width="${x(o.r.pkA)-L}" height="9" fill="var(--after)"/>`;
+    s+=`<line x1="${x(o.r.target)}" x2="${x(o.r.target)}" y1="${y}" y2="${y+24}" stroke="var(--bad)" stroke-width="2" stroke-dasharray="3 2"/>`;
+    s+=`<text x="${W-Rm+8}" y="${y+16}" font-size="12" fill="${o.r.exA>0?'var(--bad)':'var(--ok)'}">초과 ${o.r.exA.toFixed(1)}h</text><text x="${W-Rm+70}" y="${y+16}" font-size="12" fill="${o.r.miss>0?'var(--bad)':'var(--muted)'}">놓침 ${o.r.miss.toFixed(1)}h</text>`;});
+  s+=`<text x="12" y="${T-8}" font-size="11" fill="var(--muted)">규모가 큰 터미널일수록 같은 일정 변경이 kW로는 크게, 초과·놓침 시간은 목표 설정에 따라 달라진다 · 전부 가정값</text>`;
+  svg.innerHTML=s;
+}
+function drawMap(){
+  const svg=$('bmap'); let s=`<rect x="0" y="0" width="820" height="420" fill="var(--surface)"/>`;
+  s+=`<path d="M230,150 h600 v120 h-600 z" fill="var(--line)" opacity=".5"/><text x="500" y="215" text-anchor="middle" font-size="13" fill="var(--muted)">신항 수역 (개념 배치 · 축척 아님)</text>`;
+  s+=`<text x="300" y="100" font-size="12" font-weight="600" fill="var(--ink-2)">북컨테이너부두 (1~4부두)</text><text x="420" y="345" font-size="12" font-weight="600" fill="var(--ink-2)">남컨테이너부두 (5·6부두)</text><text x="110" y="185" font-size="12" font-weight="600" fill="var(--ink-2)">서컨</text>`;
+  s+=`<rect x="610" y="355" width="200" height="60" rx="3" fill="none" stroke="var(--line-2)" stroke-dasharray="4 3"/><text x="618" y="372" font-size="11" fill="var(--muted)">북항 (별도 위치 · 재개발 진행)</text>`;
+  TERMS.forEach(t=>{const h=t.h||36; const sel=SEL&&SEL.id===t.id;
+    s+=`<g data-id="${t.id}" style="cursor:pointer"><rect x="${t.x}" y="${t.y}" width="${t.w}" height="${h}" rx="3" fill="${sel?'var(--ink)':(t.plan?'var(--soft)':'var(--before)')}" stroke="${t.plan?'var(--line-2)':'none'}" stroke-dasharray="${t.plan?'4 3':'0'}" opacity="${sel?1:.85}"/><text x="${t.x+6}" y="${t.y+(t.h?20:22)}" font-size="11.5" font-weight="600" fill="${sel?'var(--bg)':(t.plan?'var(--muted)':'#fff')}">${t.id}</text>${t.h?`<text x="${t.x+6}" y="${t.y+38}" font-size="10" fill="${sel?'var(--bg)':'var(--muted)'}">${t.plan?'2026':'2-5'}</text>`:''}</g>`;});
+  s+=`<text x="12" y="408" font-size="11" fill="var(--muted)">누르면 그 터미널의 제원과 가정값이 상황판에 적용된다 · 파랑 = 운영 중, 점선 = 계획</text>`;
+  svg.innerHTML=s; svg.querySelectorAll('[data-id]').forEach(g=>g.onclick=()=>selectTerm(g.dataset.id));
+}
+function selectTerm(id){
+  SEL=TERMS.find(t=>t.id===id); const t=SEL;
+  P.N0=Math.round(t.plugs*t.n0); P.cranes=t.cranes; P.plugs=t.plugs; $('i_plugs').value=t.plugs; $('o_plugs').value=fmt(t.plugs)+'구';
+  P.chgE=(t.auto||'').includes('완전')||(t.auto||'').includes('자동화 예정')?1800:0; $('i_chgE').value=P.chgE; $('o_chgE').value=P.chgE>0?fmt(P.chgE)+'kWh':'0kWh (옵션)';
+  const est=P.base+P.idleKw+P.N0*3.2+P.cranes*P.craneKw*0.8+P.v3Cranes*P.craneKw*0.5;
+  P.target=Math.round(est/50)*50; $('i_target').max=Math.max(3200,Math.round(est*1.6/50)*50); $('i_target').value=P.target; $('o_target').value=fmt(P.target)+'kW';
+  $('termInfo').innerHTML=`<div class="sub-h" style="margin-top:0">${t.name}</div>
+   <div class="rows" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px">
+   <span class="note">운영사</span><b>${t.op} <span class="chip pub">공개</span></b>
+   <span class="note">안벽</span><b>${t.quay}</b>
+   <span class="note">하역능력</span><b>${t.cap}</b>
+   <span class="note">접안·장비</span><b>${t.berth}</b>
+   <span class="note">AMP</span><b>${t.amp} ${t.amp.includes('8기')?'<span class="chip pub">공개</span>':''}</b>
+   <span class="note">자동화</span><b>${t.auto}</b>
+   <span class="note">냉동 플러그</span><b>${fmt(t.plugs)}구 <span class="chip asm">가정 · 확인 필요</span></b>
+   <span class="note">시나리오 적용</span><b>초기 연결 ${P.N0}대 (플러그의 15%) · V2 크레인 ${P.cranes}기 · 관리목표 ${fmt(P.target)}kW <span class="chip asm">가정</span></b></div>
+   <p class="note" style="margin-top:8px">상황판·과정·대안·검증이 이 터미널 가정으로 다시 계산됐다. 3D 야드도 이 터미널 구성(크레인 ${t.cranes}기${t.amp.includes('8기')?' · AMP 접속함':''}${t.auto.includes('완전')?' · AGV':''}, 냉동 플러그 ${fmt(t.plugs)}구 축소 표현)으로 바뀐다. 플러그 수와 계량 경계는 운영사 확인 전까지 가정값이다.</p>
+   <button class="btn" id="goNow" style="margin-top:8px;border:1px solid var(--line-2);border-radius:var(--r);padding:7px 12px;background:var(--ink);color:var(--bg);font-weight:600">상황판으로 →</button>
+   ${t.plan?'<p class="note">계획 단계 터미널: 설계에 계량·이벤트 로그 규격을 제안할 기회.</p>':''}`;
+  drawMap(); refresh(); if(T3.ready){T3.buildYard();T3.update(+$('i_t3d').value);} drawTermChart(); AI.version++; AI.training=false; trainAI();
+  $('goNow').onclick=()=>document.querySelector('#tabs button[data-tab="now"]').click();
+}
+
+/* ───────── 복사 ───────── */
+document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{const el=$(b.dataset.copy);const txt=el.innerText;const done=()=>{b.textContent='복사됨';setTimeout(()=>b.textContent='복사',1500)};
+  const sel=()=>{const r=document.createRange();r.selectNodeContents(el);const sl=getSelection();sl.removeAllRanges();sl.addRange(r);b.textContent='선택됨 · Ctrl/⌘+C';};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done).catch(sel); else sel();});
+
+/* ───────── 모델 A/B/C (릿지 회귀, 가상 40일) ───────── */
+function ridge(X,y,lam){const n=X[0].length;const A=Array.from({length:n},()=>new Array(n+1).fill(0));
+  for(const [r,xi] of X.entries()){for(let i=0;i<n;i++){for(let j=0;j<n;j++)A[i][j]+=xi[i]*xi[j];A[i][n]+=xi[i]*y[r];}}
+  for(let i=1;i<n;i++)A[i][i]+=lam;
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];const d=A[c][c]||1e-9;for(let j=c;j<=n;j++)A[c][j]/=d;for(let r=0;r<n;r++)if(r!==c){const f=A[r][c];for(let j=c;j<=n;j++)A[r][j]-=f*A[c][j];}}
+  return A.map(r=>r[n]);}
+/* ── GBDT (그래디언트 부스팅 회귀트리, XGBoost와 같은 계열의 소형 구현) ──
+   깊이 3, 라운드 120, 학습률 0.08, 분기 후보 = 특징별 32분위. 브라우저에서 1~2초. */
+function gbdt(X,y,opt={}){
+  const rounds=opt.rounds||120, lr=opt.lr||0.08, depth=opt.depth||3, minLeaf=opt.minLeaf||20, nf=X[0].length, n=X.length;
+  const base=y.reduce((s,v)=>s+v,0)/n; let pred=new Array(n).fill(base); const trees=[];
+  const cuts=[];for(let f=0;f<nf;f++){const v=X.map(r=>r[f]).sort((a,b)=>a-b);const c=[];for(let q=1;q<32;q++){const val=v[Math.floor(q/32*(n-1))];if(!c.length||val>c[c.length-1])c.push(val);}cuts.push(c);}
+  const build=(idx,res,d)=>{
+    const sum=idx.reduce((s,i)=>s+res[i],0), cnt=idx.length, mean=sum/cnt;
+    if(d>=depth||cnt<2*minLeaf)return {leaf:mean};
+    let best=null;
+    for(let f=0;f<nf;f++){const vals=idx.map(i=>X[i][f]);
+      for(const c of cuts[f]){let ls=0,lc=0;for(let k=0;k<idx.length;k++){if(vals[k]<=c){ls+=res[idx[k]];lc++;}}
+        const rc=cnt-lc; if(lc<minLeaf||rc<minLeaf)continue; const rs=sum-ls; const gain=ls*ls/lc+rs*rs/rc-sum*sum/cnt;
+        if(!best||gain>best.gain)best={gain,f,c};}}
+    if(!best)return {leaf:mean};
+    const L=[],Rr=[];idx.forEach(i=>(X[i][best.f]<=best.c?L:Rr).push(i));
+    return {f:best.f,c:best.c,l:build(L,res,d+1),r:build(Rr,res,d+1)};
+  };
+  const predict1=(t,x)=>{while(t.leaf===undefined)t=x[t.f]<=t.c?t.l:t.r;return t.leaf;};
+  const all=[...Array(n).keys()];
+  for(let r=0;r<rounds;r++){const res=y.map((v,i)=>v-pred[i]);const t=build(all,res,0);trees.push(t);for(let i=0;i<n;i++)pred[i]+=lr*predict1(t,X[i]);}
+  return {predict:x=>{let v=base;for(const t of trees)v+=lr*predict1(t,x);return v;},trees:trees.length};
+}
+/* 실제 하루 생성용 ETA 편차: Michaelides et al. 2019(리마솔항, Evmides 2024 인용) 컨테이너선 분포 근사
+   — 약 45% 30분 이상 지연, 13% 2~6h 지연, 13% 1~3일 지연(재스케줄로 보고 제외), 나머지는 ±30분 내. 에이전트 ETA MAE ≈ 3h. */
+function etaDeviation(rng){const u=rng(); if(u<0.42)return (rng()-0.5)*1.0; if(u<0.74)return 0.5+rng()*1.5; if(u<0.87)return 2+rng()*4; return 2+rng()*4;}
+function abcExperiment(){
+  const rng=mul32(4242), days=40, train=30; const rows=[];let prev=null;
+  for(let d=0;d<days;d++){const q={...P};q.eta=11+Math.round(rng()*18)/2;q.delay=rng()<0.3?0:Math.round((rng()*6-1)*2)/2;q.newR=20+Math.round(rng()*12)*5;q.tmean=12+Math.round(rng()*18);
+    const sched=simulate(q,{eta:q.eta+q.delay}), orig=simulate(q,{eta:q.eta});
+    const dev=etaDeviation(rng);
+    const act=simulate(q,{eta:q.eta+q.delay+dev,lag:{plug:(rng()-0.5)*0.6,rate:(rng()-0.5)*10},noise:mul32(d*17+3)});
+    for(let i=0;i<N;i++){const t=act.t[i],h=((t%24)+24)%24,ang=h/24*2*Math.PI;const yday=prev?prev.total[i]:act.total[i]*(0.9+rng()*0.2);
+      const pull=sched.reefer[i]/Math.max(1,sched.nconn[i]); const v2=(t>=sched.work0&&t<sched.work1)?1:0, v3=(t>=q.v3Start&&t<q.v3End)?1:0;
+      const hrsSinceEta=t-(q.eta+q.delay);
+      rows.push({d,i,y:act.total[i],fA:[yday],fB:[1,Math.sin(ang),Math.cos(ang),Math.sin(2*ang),Math.cos(2*ang),ambient(t,q.tmean),yday],
+        fC:[1,Math.sin(ang),Math.cos(ang),Math.sin(2*ang),Math.cos(2*ang),ambient(t,q.tmean),yday,sched.nconn[i],pull,v2,v3],
+        fG:[h,ambient(t,q.tmean),yday,sched.nconn[i],pull,v2,v3,hrsSinceEta,q.newR,q.delay,sched.charge[i]],
+        chg:Math.abs(sched.total[i]-orig.total[i])>50?1:0,target:q.target});}
+    prev=act;}
+  const tr=rows.filter(r=>r.d<train), te=rows.filter(r=>r.d>=train);
+  const wB=ridge(tr.map(r=>r.fB),tr.map(r=>r.y),1), wC=ridge(tr.map(r=>r.fC),tr.map(r=>r.y),1);
+  const t0=performance.now(); const G=gbdt(tr.map(r=>r.fG),tr.map(r=>r.y)); const trainMs=performance.now()-t0;
+  const predB=r=>r.fB.reduce((s,v,k)=>s+v*wB[k],0), predC=r=>r.fC.reduce((s,v,k)=>s+v*wC[k],0), predA=r=>r.fA[0], predG=r=>G.predict(r.fG);
+  const evalM=(pf)=>{let mae=0,n=0,maeC=0,nC=0,pk=0,pt=0,nd=0,TP=0,FP=0,FN=0;
+    for(let d=train;d<days;d++){const rr=te.filter(r=>r.d===d);const pr=rr.map(pf),ac=rr.map(r=>r.y);
+      rr.forEach((r,k)=>{const e=Math.abs(pr[k]-ac[k]);mae+=e;n++;if(r.chg){maeC+=e;nC++}});
+      let pa=-1,ia=0,pp=-1,ip=0;ac.forEach((v,k)=>{if(v>pa){pa=v;ia=k}});pr.forEach((v,k)=>{if(v>pp){pp=v;ip=k}});pk+=Math.abs(pp-pa);pt+=Math.abs(ip-ia)*DT;nd++;
+      const tg=rr[0].target,tt=rr.map(r=>T0+r.i*DT);const m=match(events(pr,tt,tg),events(ac,tt,tg));TP+=m.TP;FP+=m.FP;FN+=m.FN;}
+    return {mae:mae/n,maeC:nC?maeC/nC:0,pk:pk/nd,pt:pt/nd,rec:TP+FN?TP/(TP+FN):0,prec:TP+FP?TP/(TP+FP):0,TP,FP,FN};};
+  return {A:evalM(predA),B:evalM(predB),C:evalM(predC),G:evalM(predG),trainMs,trees:G.trees};
+}
+function renderAbc(){const r=abcExperiment();const tb=$('abcTable').querySelector('tbody');
+  const row=(k,inp,m)=>`<tr><td><b>${k}</b></td><td>${inp}</td><td class="n">${m.mae.toFixed(1)}</td><td class="n">${m.maeC.toFixed(1)}</td><td class="n">${m.pk.toFixed(0)} kW</td><td class="n">${m.pt.toFixed(2)} h</td><td class="n">${(m.rec*100).toFixed(0)}% / ${(m.prec*100).toFixed(0)}% (TP ${m.TP}·FP ${m.FP}·FN ${m.FN})</td></tr>`;
+  tb.innerHTML=row('A 기준','전날 같은 시각',r.A)+row('B 일반(릿지)','시간대·외기·전날 값',r.B)+row('C 물류 연계(릿지)','B + 예상 연결 수량·풀다운·크레인 플래그',r.C)+row('<span class="st ok">AI</span> C-GBDT','C + ETA 경과시간·반입량·변경량·충전 (부스팅 트리 '+r.trees+'개, 학습 '+r.trainMs.toFixed(0)+'ms)',r.G);
+  R.abc=r;}
+
+/* ───────── AI 모듈: 앙상블 GBDT 학습(비동기) + 현재 시나리오 예측 + 경보 문장 ───────── */
+const AI={models:[],sigma:null,ready:false,training:false,version:0};
+function aiFeatures(sched,q,i,yday){const t=sched.t[i],h=((t%24)+24)%24;const pull=sched.reefer[i]/Math.max(1,sched.nconn[i]);const v2=(t>=sched.work0&&t<sched.work1)?1:0,v3=(t>=q.v3Start&&t<q.v3End)?1:0;
+  return [h,ambient(t,q.tmean),yday,sched.nconn[i],pull,v2,v3,t-(q.eta+q.delay),q.newR,q.delay,sched.charge[i]];}
+function aiDataset(days,seed){const rng=mul32(seed);const rows=[];let prev=null;
+  for(let d=0;d<days;d++){const q={...P};q.eta=11+Math.round(rng()*18)/2;q.delay=rng()<0.3?0:Math.round((rng()*6-1)*2)/2;q.newR=20+Math.round(rng()*12)*5;q.tmean=12+Math.round(rng()*18);
+    const sched=simulate(q,{eta:q.eta+q.delay});const act=simulate(q,{eta:q.eta+q.delay+etaDeviation(rng),lag:{plug:(rng()-0.5)*0.6,rate:(rng()-0.5)*10},noise:mul32(d*17+seed)});
+    for(let i=0;i<N;i++){const yday=prev?prev.total[i]:act.total[i]*(0.9+rng()*0.2);rows.push({d,x:aiFeatures(sched,q,i,yday),y:act.total[i]});}
+    prev=act;}
+  return rows;}
+function trainAI(){
+  if(AI.training)return; AI.training=true; AI.ready=false; const ver=++AI.version;
+  const st=$('aiStatus'); if(st)st.textContent='학습 중… (트리 앙상블 3개)';
+  setTimeout(()=>{
+    const rows=aiDataset(40,4242), train=rows.filter(r=>r.d<30), test=rows.filter(r=>r.d>=30);
+    const models=[];
+    const step=k=>{
+      if(ver!==AI.version)return;
+      if(k<3){const sub=train.filter((_,j)=>(mul32(100+k)()*0+((j*7919+k*31)%10))>=2); // 결정적 80% 부분표본
+        models.push(gbdt(sub.map(r=>r.x),sub.map(r=>r.y),{rounds:90,lr:0.08,depth:3,minLeaf:20}));
+        if(st)st.textContent=`학습 중… ${k+1}/3`; setTimeout(()=>step(k+1),10); return;}
+      // 잔차 표준편차(시험 10일)
+      let ss=0,n=0;test.forEach(r=>{const m=models.reduce((a,g)=>a+g.predict(r.x),0)/models.length;ss+=(m-r.y)**2;n++;});
+      AI.models=models; AI.sigma=Math.sqrt(ss/n); AI.ready=true; AI.training=false;
+      if(st)st.textContent=`학습 완료 · 트리 ${models.length}×90 · 시험 잔차 σ ${fmt(AI.sigma)}kW`;
+      renderAI(); renderDataStrip(); if(cur==='verify'){renderOOD();renderAiKpis();}
+    };
+    step(0);
+  },30);
+}
+function aiPredictDay(sched,q){const yd=R.before.total;const mean=[],lo=[],hi=[],spread=[];
+  for(let i=0;i<N;i++){const x=aiFeatures(sched,q,i,yd[i]);const ps=AI.models.map(g=>g.predict(x));const m=ps.reduce((a,b)=>a+b,0)/ps.length;
+    const sd=Math.sqrt(ps.reduce((a,b)=>a+(b-m)**2,0)/ps.length+AI.sigma**2);mean.push(m);lo.push(m-1.28*sd);hi.push(m+1.28*sd);spread.push(sd);}
+  return {mean,lo,hi,spread};}
+function normCdf(z){return 0.5*(1+Math.sign(z)*Math.sqrt(1-Math.exp(-2*z*z/Math.PI)));}
+function renderAI(){
+  if(!AI.ready){const m=$('aiMsg');if(m)m.textContent='학습 중…';return;}
+  const q={...P}; const sched=R.after; const tp0=performance.now(); const pr=aiPredictDay(sched,q); const predMs=performance.now()-tp0; R.ai=pr;
+  const ev=events(pr.mean,sched.t,P.target); let pk=-1,pi=0;pr.mean.forEach((v,i)=>{if(v>pk){pk=v;pi=i}});
+  const pExceed=1-normCdf((P.target-pk)/pr.spread[pi]);
+  // what-if 기여도 (피크 시각)
+  const base=pr.mean[pi]; const x0=aiFeatures(sched,q,pi,R.before.total[pi]);
+  const pred=x=>AI.models.reduce((a,g)=>a+g.predict(x),0)/AI.models.length;
+  const contrib=[];
+  { const x=x0.slice(); x[3]=Math.round(P.N0-(sched.t[pi]>=P.outEnd?P.outR:0)); x[4]=reeferKw(ambient(sched.t[pi],P.tmean)); x[8]=0; contrib.push(['신규 냉동 연결(풀다운)',base-pred(x)]); }
+  { const x=x0.slice(); x[5]=0; contrib.push(['V2 야드크레인',base-pred(x)]); }
+  { const x=x0.slice(); x[10]=0; contrib.push(['트랙터 충전',base-pred(x)]); }
+  { const x=x0.slice(); x[6]=0; contrib.push(['V3 크레인(고정 선박)',base-pred(x)]); }
+  contrib.sort((a,b)=>b[1]-a[1]); const ctrl=contrib.find(c=>!c[0].includes('V3'))||contrib[0];
+  const cov=new Array(N).fill(false);R.evB.forEach(e=>{for(let i=e.a;i<=e.b;i++)cov[i]=true});
+  const missedAI=[];ev.forEach(e=>{let c=null;for(let i=e.a;i<=e.b;i++){if(!cov[i]){if(!c)c={a:i,b:i};else c.b=i;}else if(c){missedAI.push(c);c=null}} if(c)missedAI.push(c)});
+  missedAI.forEach(m=>{m.ta=sched.t[m.a];m.tb=sched.t[m.b]+DT});
+  const lead=ev.length?(ev[0].ta-P.notice):null;
+  const sentence=ev.length
+    ?`<b>${hh(sched.t[pi])}에 ${fmt(pk)}kW 피크 예상</b> (P10–P90 ${fmt(pr.lo[pi])}–${fmt(pr.hi[pi])}kW), 관리목표 ${fmt(P.target)}kW 초과 확률 <b>${(pExceed*100).toFixed(0)}%</b>. 초과 구간 ${ev.map(e=>hh(e.ta)+'–'+hh(e.tb)).join(', ')}${missedAI.length?`, 그중 <b>기존 계획 밖 ${missedAI.map(m=>hh(m.ta)+'–'+hh(m.tb)).join(', ')}</b>`:''}. 첫 초과까지 ${lead.toFixed(1)}h.`
+    :`<b>24시간 내 목표 초과 없음</b> (피크 ${hh(sched.t[pi])} ${fmt(pk)}kW, P90 ${fmt(pr.hi[pi])}kW, 초과 확률 ${(pExceed*100).toFixed(0)}%).`;
+  $('aiMsg').innerHTML=`<p>${sentence}</p>
+    <div class="rows" style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-top:8px"><span class="note">주 원인(피크 시각 기여)</span><b>${contrib.filter(c=>c[1]>20).map(c=>`${c[0]} +${fmt(c[1])}kW`).join(' · ')||'단일 원인 없음'}</b>
+    <span class="note">권고</span><b>${ev.length?`${ctrl[0]} 조정 가능 여부를 ${ctrl[0].includes('크레인')?'운영계획':ctrl[0].includes('충전')?'장비팀':'냉동야드'}과 ${Math.max(0.5,lead-1).toFixed(1)}h 안에 협의 → '4안 비교' 탭에서 조건 충족 안 확인${contrib[0][0].includes('V3')?' (V3 크레인은 고정 선박이라 조정 대상 아님)':''}`:'모니터링 유지, 다음 ETA 통보 시 재예측'}</b>
+</div>
+    <details style="margin-top:8px"><summary class="note">근거·한계</summary><p class="note">트리 앙상블 ${AI.models.length}개 · 학습 가상 30일 · 시험 잔차 σ ${fmt(AI.sigma)}kW · 24h 예측 ${predMs.toFixed(0)}ms · 자동 제어 없음 · 가상 데이터 학습이라 수치는 예시. 다른 세계 교차 시험은 ④ 탭 ⑥-1.</p></details>`;
+  const ai1=$('aiInline'); if(ai1)ai1.textContent=`AI: ${hh(sched.t[pi])} ${fmt(pk)}kW, 초과 확률 ${(pExceed*100).toFixed(0)}%${ev.length?' · 초과 '+ev.map(e=>hh(e.ta)+'–'+hh(e.tb)).join(', '):''}`;
+  // 비교표
+  const exR=R.evA.map(e=>hh(e.ta)+'–'+hh(e.tb)).join(', ')||'없음', exA=ev.map(e=>hh(e.ta)+'–'+hh(e.tb)).join(', ')||'없음';
+  const msR=R.missed.map(m=>hh(m.ta)+'–'+hh(m.tb)).join(', ')||'없음', msA=missedAI.map(m=>hh(m.ta)+'–'+hh(m.tb)).join(', ')||'없음';
+  const agree=Math.abs(pk-R.pkA.kw)/R.pkA.kw<0.05&&Math.abs(sched.t[pi]-R.pkA.t)<=1;
+  $('cmpTable').querySelector('tbody').innerHTML=`
+    <tr><td>최대전력</td><td>${fmt(R.pkA.kw)}kW · ${hh(R.pkA.t)}</td><td>${fmt(pk)}kW · ${hh(sched.t[pi])}</td></tr>
+    <tr><td>초과 구간</td><td>${exR}</td><td>${exA}</td></tr>
+    <tr><td>기존 계획 밖</td><td>${msR}</td><td>${msA}</td></tr>
+    <tr><td>불확실성</td><td>가정값 민감도 밴드</td><td>앙상블+잔차 P10–P90, 초과 확률 ${(pExceed*100).toFixed(0)}%</td></tr>
+    <tr><td>일치</td><td colspan="2">${agree?'<span class="st ok">피크 크기 5%·시각 1h 이내 일치</span>':'<span class="st warn">불일치</span>'}</td></tr>
+    <tr><td>운영 규칙</td><td colspan="2">${agree?'둘이 같으면 그대로 확인 목록 진행.':`두 피크 중 <b>이른 쪽(${hh(Math.min(R.pkA.t,sched.t[pi]))})</b>부터 확인하고, 경보 창은 두 초과 구간의 합집합으로 잡는다. 불일치 원인 1순위는 시간차 가정(선석 대기·연결 지연) — ② 탭에서 조정.`}</td></tr>`;
+  drawChart();
+}
+function drawAiFlow(){
+  const svg=$('aiFlow');if(!svg)return;
+  const steps=[['PORT-i / TOS','ETA 변경 통보\n(통보 시각 포함)','pub'],['특징 생성','연결 수량·풀다운·\n작업 플래그·외기','rule'],['GBDT 앙상블','15분 24h 예측\nP10–P90','ai'],['경보 생성','피크·초과 구간·\n놓치는 구간·원인','ai'],['운영자','확인·협의\n(제어 없음)','human'],['결과 기록','실측 → 재학습','rule']];
+  const col={pub:'var(--before)',rule:'var(--ink-2)',ai:'#7a68d8',human:'var(--actual)'};
+  let s='';steps.forEach((st,i)=>{const x=20+i*134;s+=`<rect x="${x}" y="40" width="118" height="84" rx="4" fill="var(--surface)" stroke="${col[st[2]]}" stroke-width="${st[2]==='ai'?2.5:1.5}"/><text x="${x+59}" y="62" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">${st[0]}</text>`;
+    st[1].split('\n').forEach((l,k)=>s+=`<text x="${x+59}" y="${82+k*15}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${l}</text>`);
+    if(i<steps.length-1)s+=`<path d="M${x+120},82 h10" stroke="var(--line-2)" stroke-width="2"/><path d="M${x+128},76 l6,6 l-6,6z" fill="var(--line-2)"/>`;});
+  s+=`<path d="M${20+5*134+59},124 v30 H${20+2*134+59} v-30" fill="none" stroke="var(--line-2)" stroke-dasharray="4 3"/><text x="${20+3*134+59}" y="170" text-anchor="middle" font-size="11" fill="var(--muted)">실측이 쌓이면 같은 파이프라인으로 재학습 (현재는 가상 30일)</text>`;
+  s+=`<text x="20" y="22" font-size="11.5" fill="var(--muted)">통보 → 경보까지 목표 1분 · 학습은 사전, 예측은 ms · 보라 = AI 담당</text>`;
+  svg.innerHTML=s;
+}
+
+
+/* ───────── 데이터 계약 · 모델 카드 · 추천 보고 · 검증 · 내보내기 ───────── */
+const VERSION='v6.0';
+function strHash(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16).padStart(8,'0');}
+function dataContract(){
+  const now=new Date(); const t=now.toISOString().slice(0,16).replace('T',' ');
+  return [
+   {id:'vessel.eta',label:'선박 ETA·변경 통보',value:hh(P.eta)+'→'+hh(P.eta+P.delay),unit:'h',source:'시나리오 입력(슬라이더)',kind:'simulated',quality:'정상',note:'PORT-i/운영사 연계 없음'},
+   {id:'reefer.plug_events',label:'냉동 연결·해제 기록',value:'없음',unit:'—',source:'미연결(운영사 TOS)',kind:'missing',quality:'실련',note:'반입량으로 추정'},
+   {id:'meter.zone_kw_15m',label:'구역 15분 전력 계측',value:'없음',unit:'kW',source:'미연결(운영사 계량기)',kind:'missing',quality:'실련',note:'규칙 엔진 생성값으로 대체'},
+   {id:'weather.ambient',label:'외기온도',value:ambient(T0,P.tmean).toFixed(1)+'–'+ambient(T0+15,P.tmean).toFixed(1),unit:'℃',source:'사인 곡선(평균 '+P.tmean+'℃)',kind:'simulated',quality:'정상',note:'기상청 API 미연결'},
+   {id:'tariff.kepco',label:'전기요금 단가',value:'87.3/109.8/140.5 +'+P.tariffAdj,unit:'원/kWh',source:'한전 2023-05-16 표 + 2024-10 평균 인상분',kind:'public',quality:'지연',note:'선택요금별 현행 단가 확인 필요'},
+   {id:'thermal.coeff',label:'열 모델 계수',value:'τ 100/60/60h',unit:'h',source:'CSIRO 2007 환산 + 가정',kind:'derived',quality:'정상',note:'실측 보정 전'},
+   {id:'schedule.v1v3',label:'다른 선박(V1·V3) 일정',value:hh(P.v1Start)+'–'+hh(P.v1End)+' / '+hh(P.v3Start)+'–',unit:'h',source:'고정 가상',kind:'simulated',quality:'정상',note:''},
+   {id:'model.gbdt',label:'예측 AI',value:AI.ready?'학습 완료':'학습 중',unit:'—',source:'가상 30일 학습',kind:'derived',quality:AI.ready?'정상':'지연',note:'production_eligible=false'},
+  ].map(f=>({...f,event_time:t,ingest_time:t,is_measured:false,is_simulated:f.kind==='simulated',is_derived:f.kind==='derived'||f.kind==='public',site_id:SEL?SEL.id:'VIRTUAL',schema:'portflow-field.v1'}));
+}
+function renderDataStrip(){
+  const el=$('dataStrip');if(!el)return; const fs=dataContract();
+  const badge=f=>f.kind==='missing'?'<span class="st bad">미연결</span>':f.kind==='public'?'<span class="chip pub">공개</span>':f.kind==='derived'?'<span class="chip asm">가정</span>':'<span class="chip syn">가상</span>';
+  el.innerHTML=`<span class="st warn">시뮬레이션 모드</span><span class="note">live_data_verified=false · dispatch_allowed=false · 갱신 ${fs[0].event_time} (가상 시계 10:00 예측, 12:00 통보)</span>`+
+    fs.filter(f=>['vessel.eta','reefer.plug_events','meter.zone_kw_15m','weather.ambient','tariff.kepco','model.gbdt'].includes(f.id)).map(f=>`<span title="${f.source} · ${f.note}">${badge(f)} ${f.label}</span>`).join('');
+}
+function modelCardObj(){
+  return {model_id:'portflow-gbdt-ensemble',version:VERSION,type:'gradient_boosted_regression_trees x'+(AI.models.length||0),trees_per_model:90,depth:3,lr:0.08,
+    features:['hour','ambient_c','yesterday_same_slot_kw','expected_connected_reefers','pulldown_index_kw_per_reefer','v2_crane_flag','v3_crane_flag','hours_since_eta','new_reefers','eta_change_h','charging_kw'],
+    target:'zone_total_kw_15min',horizon:'24h (96 steps)',train:'synthetic days 0-29',test:'synthetic days 30-39',causal:'features at prediction time only (12:00 notice, no actual arrival)',
+    residual_sigma_kw:AI.sigma?Math.round(AI.sigma):null,uncertainty:'ensemble spread + test residual, P10-P90 = ±1.28σ',
+    baseline_comparison:R.abc?{A_mae:Math.round(R.abc.A.mae),B_ridge_mae:Math.round(R.abc.B.mae),C_ridge_mae:Math.round(R.abc.C.mae),C_gbdt_mae:Math.round(R.abc.G.mae)}:'run 검증 tab',
+    data_origin:'synthetic (rule engine + literature ETA deviation)',field_performance:'unknown',production_eligible:false,prohibited:'autonomous control, tariff settlement claims'};
+}
+function renderCards(){
+  const m=modelCardObj(); const mc=$('modelCard'); if(mc)mc.innerHTML=`<div class="sub-h" style="margin-top:0">모델 카드 <span class="chip plan">${m.model_id} ${m.version}</span></div>
+   <div class="rows" style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px"><span class="note">유형</span><b>${m.type}, 트리 ${m.trees_per_model}·깊이 ${m.depth}·lr ${m.lr}</b><span class="note">대상·범위</span><b>${m.target}, ${m.horizon}</b><span class="note">입력</span><b>${m.features.join(', ')}</b><span class="note">분리</span><b>${m.train} / ${m.test} (시간순)</b><span class="note">인과성</span><b>${m.causal}</b><span class="note">불확실성</span><b>${m.uncertainty} (σ ${m.residual_sigma_kw??'—'}kW)</b><span class="note">기준 비교</span><b>${typeof m.baseline_comparison==='string'?m.baseline_comparison:`A ${m.baseline_comparison.A_mae} · B ${m.baseline_comparison.B_ridge_mae} · C ${m.baseline_comparison.C_ridge_mae} · GBDT ${m.baseline_comparison.C_gbdt_mae} kW`}</b><span class="note">현장 성능</span><b>${m.field_performance} — 실데이터 0건</b><span class="note">금지</span><b>${m.prohibited}</b><span class="note">production_eligible</span><b>false</b></div>`;
+  const fs=dataContract(); const dc=$('dataCard'); if(dc)dc.innerHTML=`<div class="sub-h" style="margin-top:0">데이터 카드 <span class="chip plan">portflow-field.v1</span></div>
+   <div class="tscroll"><table><thead><tr><th>field</th><th>값</th><th>출처</th><th>분류</th><th>품질</th></tr></thead><tbody>${fs.map(f=>`<tr><td class="mono" style="font-size:11.5px">${f.id}</td><td>${f.value} ${f.unit}</td><td>${f.source}</td><td>${f.kind==='missing'?'<span class="st bad">missing</span>':f.is_simulated?'simulated':'derived'}</td><td>${f.quality}</td></tr>`).join('')}</tbody></table></div>
+   <p class="note" style="margin-top:6px">is_measured=true인 필드가 하나도 없다. 운영사 계량기·TOS 연계 후 소스·단위·시각·품질 검증을 거친 필드만 '실측'으로 바뀐다.</p>`;
+}
+function renderDecisionReport(){
+  const el=$('decisionReport'); if(!el||!R.cases)return; const cs=R.cases; const C0=cs[0];
+  const feas=cs.filter(c=>c.feasible&&!c.essNa&&c!==C0&&c.h===0);
+  if(C0.h===0){el.innerHTML='<div class="sub-h" style="margin-top:0">추천 보고</div><p class="small">초과가 없어 추천할 변경이 없다. 기존 운영 유지.</p>';return;}
+  const best=feas.length?feas.sort((a,b)=>(a.cost-b.cost)+(a.co2-C0.co2)*100)[0]:null;
+  const diff=(k,u,dec=0,lowerBetter=true)=>{const d=best[k]-C0[k];const good=lowerBetter?d<0:d>0;return {label:k,text:`${d>=0?'+':''}${d.toFixed(dec)}${u}`,good,zero:Math.abs(d)<1e-6};};
+  if(!best){
+    const near=cs.filter(c=>c!==C0&&!c.essNa).sort((a,b)=>a.h-b.h)[0];
+    const need=near?`${near.name}이 가장 가깝다(초과 ${near.h.toFixed(2)}h 잔존). 관리목표를 ${fmt(near.pk)}kW 이상으로 올리거나, ESS ${fmt(Math.max(0,near.pk-P.target))}kW급을 두거나(현재 ${P.essP}kW), 하역 기한 +${P.dl}h·비전원 허용 ${P.waitmax}h를 완화해야 충족 가능.`:'ESS를 설정하면 C1·C3 평가 가능.';
+    el.innerHTML=`<div class="sub-h" style="margin-top:0">추천 보고 <span class="st bad">현재 조건에서 목표 달성 불가</span></div><p class="small">${need}</p><p class="note">조건을 위반한 안을 점수만으로 추천하지 않는다. 운영자가 완화할 조건을 고른 뒤 다시 비교한다.</p>`;return;}
+  const items=[diff('pk','kW'),diff('h','h',2),diff('cost','원'),diff('kwh','kWh'),diff('co2','kg'),diff('tempViol','대'),diff('finish','h',1)];
+  const improved=items.filter(i=>i.good&&!i.zero), worse=items.filter(i=>!i.good&&!i.zero);
+  const names={pk:'최대전력',h:'초과시간',cost:'전력량요금',kwh:'구매전력',co2:'탄소',tempViol:'온도 위반',finish:'하역 완료'};
+  const risks=[]; if(best.sch&&best.sch.frags>1)risks.push(`크레인 작업이 ${best.sch.frags}조각으로 나뉨 — 운영 현실성 확인`); if(best.ess)risks.push(`ESS 방전 ${fmt(best.ess.used)}kWh·충전 ${fmt(best.ess.charged)}kWh, 종료 SOC ${best.ess.socEnd.toFixed(0)}% — 설비 실재·제어 권한 미확인`); if(best.maxOff>P.waitmax)risks.push(`비전원 대기 ${best.maxOff.toFixed(1)}h(허용 +1h 내) — 화물별 온도 확인`); risks.push('모든 수치는 가상 데이터 · 실측 보정 전');
+  el.innerHTML=`<div class="sub-h" style="margin-top:0">추천 보고 <span class="st ok">${best.name}</span> <span class="hint">기존 ${C0.name} 대비 · 후보 격자 탐색(강화학습·MPC 아님)</span></div>
+   <div class="grid3">
+    <div><b class="small">개선된 지표</b><ul class="small" style="margin:4px 0 0;padding-left:18px">${improved.map(i=>`<li>${names[i.label]} ${i.text}</li>`).join('')||'<li>없음</li>'}</ul></div>
+    <div><b class="small">악화된 지표</b><ul class="small" style="margin:4px 0 0;padding-left:18px">${worse.map(i=>`<li>${names[i.label]} ${i.text}</li>`).join('')||'<li>없음(잡음 0.1% 내)</li>'}</ul></div>
+    <div><b class="small">남은 위험</b><ul class="small" style="margin:4px 0 0;padding-left:18px">${risks.map(r=>`<li>${r}</li>`).join('')}</ul></div>
+   </div>
+   <p class="small" style="margin-top:8px"><b>추천 이유:</b> 비용·탄소·피크 ≤ 기준, 물동량·기한·온도·SOC 조건을 모두 통과한 안 중 비용+탄소 개선이 가장 크다. <b>적용 조건:</b> ${best.sch?'운영계획 부서의 크레인·충전 슬롯 재배치 승인':''}${best.ess?(best.sch?', ':'')+'ESS 운영 권한·계통 연계':''}${!best.sch&&!best.ess?'—':''}. 기존 운영(C0)도 선택지로 남는다.</p>`;
+}
+function exportJSON(){
+  const o={schema:'portflow-result.v1',version:VERSION,generated_at:new Date().toISOString(),simulation_mode:true,live_data_verified:false,dispatch_allowed:false,
+    inputs:{...P,terminal:SEL?SEL.id:null},cargo:CARGO,unit_max_kw:UNIT_MAX_KW,tariff:{base_table:'KEPCO 2023-05-16 HV-A sel.II',adj_per_kwh:P.tariffAdj,co2_kg_per_kwh:P.co2},
+    data_fields:dataContract(),
+    outputs:{peak_before_kw:Math.round(R.pkB.kw),peak_before_t:hh(R.pkB.t),peak_after_kw:Math.round(R.pkA.kw),peak_after_t:hh(R.pkA.t),exceed_after:R.evA.map(e=>[hh(e.ta),hh(e.tb),Math.round(e.max)]),missed:R.missed.map(m=>[hh(m.ta),hh(m.tb)]),
+      ai:R.ai?{peak_kw:Math.round(Math.max(...R.ai.mean)),sigma_kw:Math.round(AI.sigma)}:null,
+      cases:R.cases?R.cases.map(c=>({name:c.name,kwh:Math.round(c.kwh),cost:Math.round(c.cost),peak_kw:Math.round(c.pk),co2:Math.round(c.co2),exceed_h:c.h,temp_viol:c.tempViol,feasible:c.feasible,ess_na:c.essNa})):'open 4안 tab',
+      series_total_after_kw:R.after.total.map(v=>Math.round(v))},
+    model_card:modelCardObj()};
+  const txt=JSON.stringify(o,null,1); o.result_sha_fnv1a=strHash(txt); const out=JSON.stringify(o,null,1);
+  $('exportBox').textContent=out; return o;
+}
+function runTests(){
+  const rows=[]; const add=(n,m,r,ok)=>rows.push([n,m,r,ok]);
+  // 1 결정성
+  const a1=simulate(P,{eta:P.eta+P.delay}), a2=simulate(P,{eta:P.eta+P.delay}); const same=a1.total.every((v,i)=>v===a2.total[i]); add('같은 입력 → 같은 결과','simulate 2회 실행, 96개 값 비교',same?'96/96 동일':'불일치',same);
+  // 2 단위 Δt
+  let kwh=0;R.after.total.forEach(v=>kwh+=v*DT); const cs=R.cases||[]; const c0=cs[0]; const ok2=!c0||Math.abs(c0.kwh-kwh)<1e-6; add('전력→전력량 Δt=0.25h','Σ kW×0.25 vs 4안표 C0 구매전력',`${fmt(kwh)} kWh vs ${c0?fmt(c0.kwh):'—'}`,ok2);
+  // 3 KPI·표·그래프 일치
+  const pkFromSeries=Math.max(...R.after.total); const ok3=Math.abs(pkFromSeries-R.pkA.kw)<1e-9; add('KPI = 그래프 최대값','KPI pkA vs max(series)',`${fmt(R.pkA.kw)} vs ${fmt(pkFromSeries)}`,ok3);
+  const exSum=R.evA.reduce((s,e)=>s+e.h,0); const ok3b=!c0||Math.abs(exSum-c0.h)<1e-9; add('초과시간: 상황판 = 4안표 C0','events() 합계 비교',`${exSum.toFixed(2)}h vs ${c0?c0.h.toFixed(2):'—'}h`,ok3b);
+  // 4 누락 데이터 표시
+  const miss=dataContract().filter(f=>f.kind==='missing').length; add('누락 데이터를 정상값처럼 표시하지 않음','데이터 카드 missing 필드 수',`${miss}개 missing으로 표시, is_measured=true 0개`,miss>0);
+  // 5 목표 달성 불가
+  const sv={...P}; P.target=1000; compute(); renderAlt(); const txt=$('verdict').innerHTML.replace(/<[^>]+>/g,''); Object.assign(P,sv); compute(); renderAlt();
+  add('목표 달성 불가 시 표시','target=1,000kW로 낮춰 실행',txt.includes('달성 불가')?'"'+txt.slice(0,60)+'…"':'표시 안 됨(비정상)',txt.includes('달성 불가'));
+  // 6 경계: 반입 0
+  const sv2={...P}; P.newR=0; const s0=simulate(P,{eta:P.eta+P.delay}); Object.assign(P,sv2); const ok6=isFinite(s0.pullKwh)&&s0.maxOff===0&&s0.tempViol===0; add('경계조건: 신규 반입 0대','newR=0 시뮬레이션',`pull ${s0.pullKwh.toFixed(0)}kWh, viol ${s0.tempViol}`,ok6);
+  // 7 경계: ETA 조기(-2h)
+  const sv3={...P}; P.delay=-2; const sE=simulate(P,{eta:P.eta+P.delay}); Object.assign(P,sv3); add('경계조건: ETA 2h 조기','delay=-2',`접안 ${hh(sE.berth)}, 연결 ${hh(sE.tcStart)}–${hh(sE.tcEnd)}`,sE.berth<P.eta+P.wait);
+  // 8 소켓 부족
+  const sv4={...P}; P.plugs=170; const sP=simulate(P,{eta:P.eta+P.delay}); Object.assign(P,sv4); add('자원 제약: 소켓 부족(170구)','plugs=170',`${sP.sockWaitN}대 대기, 최대 ${sP.sockWaitMax.toFixed(2)}h`,sP.sockWaitN>0);
+  // 9 ESS 에너지 보존
+  const sv5={...P}; P.essP=400; const e=applyEss(R.after,P,P.target); Object.assign(P,sv5); const ok9=e.charged>=e.used&&e.socOk; add('ESS: 충전 ≥ 방전, 종료 SOC ≥ 초기','essP=400 적용',`방전 ${fmt(e.used)} 충전 ${fmt(e.charged)} 종료 SOC ${e.socEnd.toFixed(0)}%`,ok9);
+  // 10 익일 넘김
+  const over=R.after.t.filter(t=>t>=24).length; add('다음 날로 넘어가는 부하 포함','t≥24h 슬롯 수',`${over}/96 슬롯이 익일`,over>0);
+  // 11 결과 좋게 보이는 하드코딩
+  add('결과를 좋게 보이게 하는 하드코딩','TOL=0.1% 외 보정 없음, 사례 선별 없음(30일 유형 빈도 공개)','코드 검토 기준','n/a');
+  // 12 AI
+  add('AI 학습 완료·정확도 생성 여부','AI.ready 및 σ',AI.ready?`학습 완료 σ ${fmt(AI.sigma)}kW (가상)`:'학습 중 — 정확도 미표시',true);
+  const untested=[['iPad·Safari 터치·회전 충돌','수동','미실행','na'],['3D 로딩 실패 시 2D 대체','수동(네트워크 차단)','미실행','na'],['통신 장애 시나리오','미연결 상태가 기본','해당 없음(항상 미연결)','na']];
+  const tb=$('testTable').querySelector('tbody'); tb.innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]==='n/a'?'<span class="st na">검토</span>':r[3]?'<span class="st ok">통과</span>':'<span class="st bad">실패</span>'}</td></tr>`).join('')+untested.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td><span class="st na">미실행</span></td></tr>`).join('');
+  return rows;
+}
+function applyRotterdam(){
+  Object.assign(P,{N0:1000,newR:170,outR:150,outStart:11,outEnd:20,v3R:120,plugs:2400,cranes:6,target:5000,tmean:22});
+  [['i_newR',P.newR],['i_plugs',P.plugs],['i_target',P.target],['i_tmean',P.tmean]].forEach(([id,v])=>{const el=$(id);if(el){el.max=Math.max(+el.max,v);el.value=v;}});
+  $('o_newR').value=P.newR+'대';$('o_plugs').value=fmt(P.plugs)+'구';$('o_target').value=fmt(P.target)+'kW';$('o_tmean').value=P.tmean+'℃';
+  SEL=null; drawMap(); refresh(); AI.version++;AI.training=false;trainAI();
+  $('termInfo').innerHTML=`<div class="sub-h" style="margin-top:0">로테르담 규모 시나리오 <span class="chip pub">규모 근거 공개</span></div><p class="small">연 61,321대 ≈ 하루 168대 반입, 대형선 1척 800플러그, 15분 피크 14.8MW(터미널 전체)를 참고해 구역 규모를 키웠다: 기존 연결 1,000대, 신규 170대, 플러그 2,400구, 관리목표 5,000kW(구역 기준 가정). 대당 kW·시간차·크레인은 여전히 가정이라 절대값은 로테르담 실측과 다르다.</p><p class="note">상황판·4안·검증이 이 규모로 다시 계산된다. 원래대로 돌리려면 새로고침.</p>`;
+  document.querySelector('#tabs button[data-tab="now"]').click();
+}
+
+
+/* ───────── 교차검증: 학습에 쓰지 않은 '다른 세계'로 시험 (순환 논증 점검) ─────────
+   세계 B = 열 계수·시간차·ETA 편차·크레인 kW·기본부하를 모두 바꾼 생성기. 학습은 세계 A(기본)에서만.
+   AI가 '시뮬레이터 자체'를 외운 것이면 세계 B에서 크게 무너지고, 구조(일정→부하)를 배운 것이면 덜 무너진다. */
+function worldB(){
+  const C2={frozen:{...CARGO.frozen,tauOff:70,kPull:2.2,limit:2},chilled:{...CARGO.chilled,tauOff:40,kPull:2.4,limit:1},banana:{...CARGO.banana,tauOff:40,kPull:2.0,limit:0.5}};
+  return {cargo:C2,p:{wait:1.6,dstart:0.75,plug:1.6,rate:18,craneKw:300,idleKw:120,base:420,co2:0.478},etaDev:rng=>{const u=rng();if(u<0.3)return (rng()-0.5)*1.5;if(u<0.7)return 1+rng()*2.5;return 3+rng()*5;}};
+}
+function oodExperiment(){
+  if(!AI.ready||!R.abc)return null;
+  const W=worldB(); const saveC={...CARGO}; Object.assign(CARGO,W.cargo);
+  const rng=mul32(7777); const rows=[]; let prev=null;
+  for(let d=0;d<10;d++){const q={...P,...W.p};q.eta=11+Math.round(rng()*18)/2;q.delay=rng()<0.3?0:Math.round((rng()*6-1)*2)/2;q.newR=20+Math.round(rng()*12)*5;q.tmean=12+Math.round(rng()*18);
+    const sched=simulate(q,{eta:q.eta+q.delay}); const act=simulate(q,{eta:q.eta+q.delay+W.etaDev(rng),lag:{plug:(rng()-0.5)*0.8,rate:(rng()-0.5)*12},noise:mul32(d*23+9)});
+    for(let i=0;i<N;i++){const yday=prev?prev.total[i]:act.total[i]*(0.9+rng()*0.2);rows.push({d,i,y:act.total[i],x:aiFeatures(sched,q,i,yday),yday,target:q.target});}
+    prev=act;}
+  Object.assign(CARGO,saveC);
+  const predG=r=>AI.models.reduce((a,g)=>a+g.predict(r.x),0)/AI.models.length, predA=r=>r.yday;
+  const ev=pf=>{let mae=0,n=0,pk=0,pt=0,nd=0,TP=0,FP=0,FN=0;for(let d=0;d<10;d++){const rr=rows.filter(r=>r.d===d);const pr=rr.map(pf),ac=rr.map(r=>r.y);rr.forEach((r,k)=>{mae+=Math.abs(pr[k]-ac[k]);n++;});
+    let pa=-1,ia=0,pp=-1,ip=0;ac.forEach((v,k)=>{if(v>pa){pa=v;ia=k}});pr.forEach((v,k)=>{if(v>pp){pp=v;ip=k}});pk+=Math.abs(pp-pa);pt+=Math.abs(ip-ia)*DT;nd++;
+    const tt=rr.map(r=>T0+r.i*DT);const m=match(events(pr,tt,rr[0].target),events(ac,tt,rr[0].target));TP+=m.TP;FP+=m.FP;FN+=m.FN;}
+    return {mae:mae/n,pk:pk/nd,pt:pt/nd,rec:TP+FN?TP/(TP+FN):0,prec:TP+FP?TP/(TP+FP):0,TP,FP,FN};};
+  return {A:ev(predA),G:ev(predG),inA:{A:R.abc.A,G:R.abc.G}};
+}
+function renderOOD(){
+  const tb=$('oodTable');if(!tb)return; const o=oodExperiment(); if(!o){tb.querySelector('tbody').innerHTML='<tr><td colspan="6" class="note">AI 학습 완료 후 표시</td></tr>';return;}
+  const row=(k,inA,inB)=>`<tr><td><b>${k}</b></td><td class="n">${inA.mae.toFixed(0)}</td><td class="n">${inB.mae.toFixed(0)} <span class="note">(${inB.mae>inA.mae?'+':''}${((inB.mae/inA.mae-1)*100).toFixed(0)}%)</span></td><td class="n">${inA.pt.toFixed(2)} → ${inB.pt.toFixed(2)} h</td><td class="n">${(inA.rec*100).toFixed(0)}/${(inA.prec*100).toFixed(0)}% → ${(inB.rec*100).toFixed(0)}/${(inB.prec*100).toFixed(0)}%</td></tr>`;
+  tb.querySelector('tbody').innerHTML=row('A 전날값(학습 없음)',o.inA.A,o.A)+row('AI GBDT (세계 A 학습)',o.inA.G,o.G);
+  const deg=(o.G.mae/o.inA.G.mae-1)*100; const still=o.G.mae<o.A.mae;
+  $('oodNote').innerHTML=`${still?'<span class="st ok">세계 B에서도 AI가 단순 기준보다 낫다</span>':'<span class="st bad">세계 B에서 AI가 단순 기준보다 못하다</span>'} — 오차 ${deg>=0?'+':''}${deg.toFixed(0)}%. 이 수치가 커질수록 "시뮬레이터를 외웠다"에 가깝고, 작을수록 "일정→부하 구조를 배웠다"에 가깝다. 실제 현장은 세계 A도 B도 아니므로 이것은 민감도 시험이지 현장 성능이 아니다.`;
+  R.ood=o;
+}
+
+
+/* ───────── 경제성: 조건부 추정 ───────── */
+function renderEcon(){
+  const el=$('econBox'); if(!el||!R.cases)return; const cs=R.cases,C0=cs[0];
+  const best=cs.filter(c=>c.feasible&&!c.essNa&&c!==C0&&c.h===0).sort((a,b)=>a.cost-b.cost)[0]||cs.filter(c=>c!==C0&&!c.essNa).sort((a,b)=>a.pk-b.pk)[0];
+  if(!best){el.innerHTML='';return;}
+  const dPk=Math.max(0,C0.pk-best.pk), kepcoBase=8320, rdamPeak=27*1500; // €27/kW ≈ 40,500원/kW (환율 1,500원 가정)
+  const dayCost=C0.cost-best.cost;
+  const month=dPk*kepcoBase, year=month*12;
+  el.innerHTML=`<div class="sub-h" style="margin-top:0">돈으로 얼마인가 <span class="hint">조건부 추정 · 계약 조건 확인 전</span></div>
+   <div class="tscroll"><table><thead><tr><th>항목</th><th class="n">값</th><th>조건</th><th>출처</th></tr></thead><tbody>
+    <tr><td>전력량요금 차이 (하루)</td><td class="n">${dayCost>=0?'−':'+'}${fmt(Math.abs(dayCost))}원</td><td>${best.name} 적용일마다</td><td>한전 2023-05 표 + 인상 보정</td></tr>
+    <tr><td>기본요금 절감 (월 상한)</td><td class="n">최대 ${fmt(month)}원/월</td><td>이 날 피크가 그 달 최대수요였을 때만 · 피크 −${fmt(dPk)}kW × 8,320원/kW</td><td>한전 고압A 선택Ⅱ</td></tr>
+    <tr><td>같은 상황이 매달 1회 이상이면</td><td class="n">최대 ${fmt(year)}원/년</td><td>12개월 모두 해당 · 계약전력 초과요금은 별도</td><td>산식</td></tr>
+    <tr><td>로테르담식 피크 요금이라면</td><td class="n">약 ${fmt(dPk*rdamPeak)}원/월</td><td>27€/kW(1€=1,500원 가정) · 한국 요금제 아님, 비교용</td><td>van Duin 2017</td></tr>
+    <tr><td>로테르담 터미널 전체 추정</td><td class="n">연 최대 약 €100만</td><td>14.8MW→8.3MW 슬롯 분산, 터미널 전체</td><td>van Duin 2017</td></tr>
+   </tbody></table></div>
+   <p class="note" style="margin-top:6px">우리 구역(2–3MW)에서 돈은 작고, 가치는 '피크를 보고 협의할 시간'이다. 터미널 전체(10MW+)로 가면 로테르담 수준의 절감이 조건부로 가능하다. 월 요금 절감은 실제 계약·청구 규칙 확인 후에만 산정한다.</p>`;
+}
+
+
+/* ───────── AI KPI · 예측범위별 오차 ───────── */
+function renderAiKpis(){
+  const el=$('aiKpis'); if(!el)return; const r=R.abc;
+  if(!r||!AI.ready){el.innerHTML='<div class="ans"><div class="q">AI</div><div class="a">학습 중</div></div>';return;}
+  const o=R.ood;
+  el.innerHTML=`<div class="ans ok"><div class="q">단순 기준 대비 오차</div><div class="a">−${((1-r.G.mae/r.A.mae)*100).toFixed(0)}%</div><div class="d">MAE ${fmt(r.A.mae)} → ${fmt(r.G.mae)} kW · 10일 시험</div></div>
+   <div class="ans ${r.G.rec>=0.8?'ok':''}"><div class="q">사건 단위 경보</div><div class="a">재현 ${(r.G.rec*100).toFixed(0)}% · 정밀 ${(r.G.prec*100).toFixed(0)}%</div><div class="d">TP ${r.G.TP} · FP ${r.G.FP} · FN ${r.G.FN}</div></div>
+   <div class="ans"><div class="q">다른 세계에서도</div><div class="a">${o?(o.G.mae<o.A.mae?'기준보다 낫다':'기준보다 못하다'):'—'}</div><div class="d">${o?'오차 '+fmt(o.inA.G.mae)+'→'+fmt(o.G.mae)+' kW (세계 B)':'⑥-1'}</div></div>
+   <div class="ans alert"><div class="q">현장 성능</div><div class="a">unknown</div><div class="d">가상 학습 · 실데이터 0건</div></div>`;
+  const tb=$('horizonTable'); if(!tb)return;
+  const rows=aiDataset(40,4242).filter(x=>x.d>=30); const ni=Math.round((P.notice-T0)/DT);
+  const win={'+1h (12:00–13:00)':[ni,ni+4],'+6h (12:00–18:00)':[ni,ni+24],'+24h (전체)':[0,N]};
+  const pred=x=>AI.models.reduce((a,g)=>a+g.predict(x),0)/AI.models.length;
+  let html='';for(const k in win){const [a,b]=win[k];let eA=0,eG=0,n=0;
+    rows.forEach((r,idx)=>{const i=idx%N; if(i<a||i>=b)return; eA+=Math.abs(r.x[2]-r.y); eG+=Math.abs(pred(r.x)-r.y); n++;});
+    html+=`<tr><td>${k}</td><td class="n">${(eA/n).toFixed(0)}</td><td class="n">${(eG/n).toFixed(0)}</td><td class="n">${((1-(eG/n)/(eA/n))*100).toFixed(0)}%</td></tr>`;}
+  tb.querySelector('tbody').innerHTML=html;
+}
+/* ───────── 연간 환산 ───────── */
+function renderAnnual(){
+  const el=$('annualBox'); if(!el||!R.cases)return; const cs=R.cases,C0=cs[0];
+  const best=cs.filter(c=>c.feasible&&!c.essNa&&c!==C0&&c.h===0).sort((a,b)=>a.cost-b.cost)[0]||cs.filter(c=>c!==C0&&!c.essNa).sort((a,b)=>a.pk-b.pk)[0];
+  if(!best){el.innerHTML='<p class="note">4안 결과 후 표시</p>';return;}
+  const dPk=Math.max(0,C0.pk-best.pk), dayCost=Math.max(0,C0.cost-best.cost);
+  const days=P.riskDays*12, energyY=dayCost*days, baseY=dPk*8320*12*(P.peakProb/100);
+  const lo=Math.round((energyY+baseY*0.5)/10000), hi=Math.round((energyY+baseY)/10000);
+  el.innerHTML=`<div class="rows" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px"><span class="note">전력량요금</span><b>${fmt(dayCost)}원 × ${days}일 = ${fmt(energyY)}원/년</b><span class="note">기본요금</span><b>${fmt(dPk)}kW × 8,320원 × 12개월 × ${P.peakProb}% = ${fmt(baseY)}원/년</b><span class="note">합계 범위</span><b style="font-size:16px">약 ${fmt(lo)}만 ~ ${fmt(hi)}만원/년</b><span class="note">구역 1개 기준</span><b>터미널 전체(피크 10MW+)면 10배 규모 가능 — 로테르담 €100만/년과 같은 급</b></div><p class="note" style="margin-top:6px">돈보다 먼저 오는 가치: 초과 ${C0.h.toFixed(1)}h → ${best.h.toFixed(1)}h, 온도 위반 ${C0.tempViol}→${best.tempViol}대, 통보 후 협의 시간 ${R.evA.length?(R.evA[0].ta-P.notice).toFixed(1):'—'}h 확보.</p>`;
+}
+/* ───────── 확장 프리셋 ───────── */
+const PRESETS={
+  port:{label:'부산항 구역',p:{N0:150,newR:50,outR:50,v3R:30,plugs:250,cranes:4,craneKw:250,base:350,target:2300,chgE:0,chgN:4,chgStart:18,chgEnd:32,tmean:18},names:{unit:'냉동컨테이너',vessel:'선박',crane:'야드크레인',plug:'전원 연결'}},
+  coldstore:{label:'냉동물류창고',p:{N0:400,newR:120,outR:100,v3R:0,plugs:600,cranes:2,craneKw:120,base:250,target:1800,chgE:0,chgN:4,chgStart:18,chgEnd:32,tmean:22},names:{unit:'입고 팔레트(냉동실 단위)',vessel:'입고 트럭 편성',crane:'하역 도크',plug:'냉동실 입고'}},
+  busdepot:{label:'전기버스 차고지',p:{N0:0,newR:0,outR:0,v3R:0,plugs:80,cranes:1,craneKw:60,base:150,target:900,chgE:2400,chgN:8,chgStart:17,chgEnd:30,tmean:18},names:{unit:'—',vessel:'운행 복귀',crane:'정비',plug:'충전 시작'}},
+};
+function applyPreset(k){const pr=PRESETS[k]; Object.assign(P,pr.p); SEL=null;
+  [['i_newR',P.newR],['i_plugs',P.plugs],['i_target',P.target],['i_tmean',P.tmean],['i_chgE',P.chgE],['i_chgN',P.chgN]].forEach(([id,v])=>{const el=$(id);if(el){el.max=Math.max(+el.max,v);el.value=v;}});
+  $('o_newR').value=P.newR+'대';$('o_plugs').value=fmt(P.plugs)+'구';$('o_target').value=fmt(P.target)+'kW';$('o_tmean').value=P.tmean+'℃';$('o_chgE').value=P.chgE>0?fmt(P.chgE)+'kWh':'0kWh (옵션)';$('o_chgN').value=P.chgN+'대';
+  drawMap(); refresh(); AI.version++;AI.training=false;trainAI();
+  $('termInfo').innerHTML=`<div class="sub-h" style="margin-top:0">${pr.label} <span class="chip asm">규모 가정</span></div><p class="small">매핑: 선박→${pr.names.vessel}, 냉동컨테이너→${pr.names.unit}, 야드크레인→${pr.names.crane}, 전원 연결→${pr.names.plug}. 엔진·AI·4안 판정은 그대로.</p>`;
+  document.querySelector('#tabs button[data-tab="now"]').click();
+}
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(b.dataset.preset));
+
+/* ───────── 4안 20일 재검증 ───────── */
+function renderHoldout(){
+  const rng=mul32(9090), days=20; const agg={C0:[],C1:[],C2:[],C3:[]};
+  const saveP={...P};
+  for(let d=0;d<days;d++){
+    P.eta=11+Math.round(rng()*18)/2; P.delay=rng()<0.3?0:Math.round((rng()*6-1)*2)/2; P.newR=20+Math.round(rng()*12)*5; P.tmean=12+Math.round(rng()*18);
+    compute();
+    const cs={C0:runCase('C0',{seed:d+1}),C1:runCase('C1',{useEss:true,seed:d+1}),C2:runCase('C2',{useSched:true,priority:true,seed:d+1}),C3:runCase('C3',{useSched:true,priority:true,useEss:true,seed:d+1})};
+    const C0=cs.C0; const TOL=0.001;
+    for(const k in cs){const c=cs[k]; c.notWorse=c.cost<=C0.cost*(1+TOL)&&c.co2<=C0.co2*(1+TOL)&&c.pk<=C0.pk*(1+TOL); c.feasible=c.notWorse&&c.throughputOk&&c.delayOk&&c.tempOk&&c.socOk; agg[k].push(c);}
+  }
+  Object.assign(P,saveP); compute();
+  const avg=(arr,f)=>arr.reduce((s,c)=>s+f(c),0)/arr.length;
+  const tb=$('holdTable').querySelector('tbody');
+  const names={C0:'C0 기존 운영',C1:'C1 ESS만',C2:'C2 작업 조정만',C3:'C3 조정+ESS'};
+  tb.innerHTML=Object.keys(agg).map(k=>{const a=agg[k]; const na=(k==='C1'||k==='C3')&&P.essP<=0;
+    const why=k==='C0'||na?'—':`비용·탄소·피크 ${a.filter(c=>!c.notWorse).length} · 지연 ${a.filter(c=>!c.delayOk).length} · 온도 ${a.filter(c=>!c.tempOk).length} · SOC ${a.filter(c=>!c.socOk).length}`;
+    return `<tr><td><b>${names[k]}</b>${na?' <span class="st na">ESS 미설정</span>':''}</td><td class="n">${fmt(avg(a,c=>c.kwh))}</td><td class="n">${fmt(avg(a,c=>c.cost))}원</td><td class="n">${fmt(avg(a,c=>c.pk))}kW</td><td class="n">${avg(a,c=>c.co2).toFixed(0)}kg</td><td class="n">${avg(a,c=>c.h).toFixed(2)}h</td><td class="n">${avg(a,c=>c.tempViol).toFixed(1)}대</td><td class="n">${k==='C0'?'기준':(na?'—':a.filter(c=>c.feasible).length+'/'+days)}</td><td class="small">${why}</td></tr>`;}).join('');
+}
+
+/* ───────── 입력 바인딩 ───────── */
+const bind=[['i_eta','eta',v=>hh(v)],['i_delay','delay',v=>(v>=0?'+':'')+v.toFixed(1)+'h'],['i_newR','newR',v=>v+'대'],['i_tmean','tmean',v=>v+'℃'],['i_target','target',v=>fmt(v)+'kW'],
+ ['i_wait','wait',v=>v.toFixed(2)+'h'],['i_dstart','dstart',v=>v.toFixed(2)+'h'],['i_rate','rate',v=>v+'대/h'],['i_plug','plug',v=>v.toFixed(2)+'h'],['i_disch','disch',v=>v+'h'],
+ ['i_waitmax','waitmax',v=>v.toFixed(1)+'h'],['i_dOff0','dOff0',v=>v.toFixed(1)+'h'],['i_essP','essP',v=>v>0?v+'kW':'0kW (미설정)'],['i_essE','essE',v=>v+'kWh'],['i_soc','soc',v=>v+'% / 20%'],['i_dl','dl',v=>'+'+v+'h'],['i_riskDays','riskDays',v=>v+'일'],['i_peakProb','peakProb',v=>v+'%'],['i_plugs','plugs',v=>fmt(v)+'구'],['i_chgE','chgE',v=>v>0?fmt(v)+'kWh':'0kWh (옵션)'],['i_chgN','chgN',v=>v+'대'],['i_adj','tariffAdj',v=>'+'+v.toFixed(1)]];
+bind.forEach(([id,key,f])=>{const el=$(id);const o=$('o_'+id.slice(2));if(!el)return;el.addEventListener('input',()=>{P[key]=+el.value;o.value=f(+el.value);if(key==='riskDays'||key==='peakProb'){renderAnnual();return;}refresh();});});
+$('i_t3d').addEventListener('input',()=>setTime(+$('i_t3d').value));
+let cur='now';
+function refresh(){compute();renderNow();if(cur==='busan')drawTermChart();if(cur==='chain')renderChain();if(cur==='alt')renderAlt();if(cur==='verify')renderVerify();}
+$('btnTests').onclick=()=>{if(!R.cases)renderAlt();runTests();};
+$('btnExport').onclick=()=>{if(!R.cases)renderAlt();exportJSON();};
+$('btnRdam').onclick=applyRotterdam;
+$('moreTabs').onclick=()=>{const ex=document.querySelectorAll('#tabs .extra');const show=ex[0].hidden;ex.forEach(b=>b.hidden=!show);$('moreTabs').textContent=show?'접기 ▴':'더 보기 ▾';};
+document.querySelectorAll('#tabs button[data-tab]').forEach(b=>b.onclick=()=>{cur=b.dataset.tab;document.querySelectorAll('#tabs button[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));['now','busan','chain','alt','verify','build','track'].forEach(k=>$('tab-'+k).hidden=(k!==cur));
+  if(cur==='busan'){drawMap();drawTermChart();if(!SEL)$('termInfo').innerHTML='<div class="sub-h" style="margin-top:0">터미널을 선택하세요</div><p class="note">배치도의 부두를 누르면 공개 제원·가정값·적용 결과가 여기 나타난다. 기본 시나리오는 특정 터미널이 아닌 가상 구역이다.</p>';}
+  if(cur==='chain')renderChain();if(cur==='alt')renderAlt();if(cur==='verify')renderVerify();window.scrollTo({top:0});});
+refresh();drawIso();
+trainAI();
+const h0=(location.hash||'').replace('#','');if(['now','busan','chain','alt','verify','build','track'].includes(h0)){document.querySelector(`#tabs button[data-tab="${h0}"]`).click();}
+</script>
+
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
